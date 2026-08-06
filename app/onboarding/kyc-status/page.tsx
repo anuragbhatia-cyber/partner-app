@@ -142,11 +142,6 @@ function StepRow({
           >
             {label}
           </span>
-          {current && (
-            <span className="ml-auto t-caption text-warning-bold font-semibold uppercase tracking-wider">
-              In progress
-            </span>
-          )}
         </div>
       </div>
     </li>

@@ -32,9 +32,9 @@ export function PhoneFrame({
   if (isNested) return <>{children}</>;
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center py-4 md:py-10 px-4">
-      {/* Meta strip */}
-      <div className="w-full max-w-[420px] flex items-center justify-between mb-4 md:mb-6 text-xs text-neutral-600">
+    <div className="min-h-screen w-full flex flex-col items-center md:py-10 md:px-4">
+      {/* Meta strip — desktop only */}
+      <div className="hidden md:flex w-full max-w-[420px] items-center justify-between mb-6 text-xs text-neutral-600">
         <Link
           href="/"
           className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-white shadow-e1 hover:bg-neutral-50 transition-colors"
@@ -49,12 +49,12 @@ export function PhoneFrame({
         )}
       </div>
 
-      {/* Phone chrome */}
-      <div className="relative w-full max-w-[420px] rounded-[42px] bg-neutral-900 p-2 shadow-e3">
+      {/* Phone chrome — bezel only shows on md+; on mobile the UI is edge-to-edge */}
+      <div className="relative w-full md:max-w-[420px] md:rounded-[42px] md:bg-neutral-900 md:p-2 md:shadow-e3">
         {/* Screen */}
-        <div className="relative rounded-[34px] overflow-hidden bg-[var(--surface-bg)] w-full aspect-[9/19.5]">
-          {/* Status bar */}
-          <div className="absolute inset-x-0 top-0 z-40 flex items-center justify-between px-6 pt-2 pb-1 t-body-sm font-semibold text-neutral-900 tabular bg-white">
+        <div className="relative bg-[var(--surface-bg)] w-full md:rounded-[34px] md:overflow-hidden md:aspect-[9/19.5] min-h-screen md:min-h-0">
+          {/* Status bar — desktop only (mobile OS has its own) */}
+          <div className="hidden md:flex absolute inset-x-0 top-0 z-40 items-center justify-between px-6 pt-2 pb-1 t-body-sm font-semibold text-neutral-900 tabular bg-white">
             <span>{time}</span>
             <div className="absolute left-1/2 -translate-x-1/2 top-1.5 h-6 w-24 rounded-full bg-neutral-900" />
             <div className="flex items-center gap-1">
@@ -64,8 +64,8 @@ export function PhoneFrame({
             </div>
           </div>
 
-          {/* Screen content */}
-          <div className="absolute inset-0 pt-9 overflow-y-auto no-scrollbar">
+          {/* Screen content — absolute + internal scroll on desktop, natural doc flow on mobile */}
+          <div className="md:absolute md:inset-0 md:pt-9 md:overflow-y-auto no-scrollbar flex flex-col min-h-screen md:min-h-0">
             {children}
           </div>
         </div>
