@@ -23,7 +23,7 @@ import {
   Menu,
   Sparkles,
 } from "lucide-react";
-import { PhoneShell } from "@/components/PhoneFrame";
+import { PhoneShell, PhoneFrameProvider } from "@/components/PhoneFrame";
 import { cn } from "@/lib/utils";
 
 /* Import every screen. Nested PhoneFrames in each page become no-op
@@ -246,15 +246,23 @@ export default function PrototypePlayer() {
 
   return (
     <div
-      className="fixed inset-0 overflow-hidden text-white"
+      className="fixed inset-0 overflow-hidden text-white md:bg-none"
       style={{
-        background:
-          "radial-gradient(1200px 800px at 30% 20%, #1a2951 0%, #0c1830 40%, #050912 100%)",
+        background: undefined,
       }}
     >
-      {/* Subtle grid */}
+      {/* Player backdrop — desktop only */}
       <div
-        className="absolute inset-0 opacity-[0.04] pointer-events-none"
+        className="hidden md:block absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(1200px 800px at 30% 20%, #1a2951 0%, #0c1830 40%, #050912 100%)",
+        }}
+      />
+
+      {/* Subtle grid — desktop only */}
+      <div
+        className="hidden md:block absolute inset-0 opacity-[0.04] pointer-events-none"
         style={{
           backgroundImage:
             "linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px)",
@@ -262,8 +270,8 @@ export default function PrototypePlayer() {
         }}
       />
 
-      {/* Top bar */}
-      <header className="absolute top-0 inset-x-0 h-14 px-4 md:px-6 flex items-center justify-between z-30">
+      {/* Top bar — desktop only */}
+      <header className="hidden md:flex absolute top-0 inset-x-0 h-14 px-4 md:px-6 items-center justify-between z-30">
         <div className="flex items-center gap-2 md:gap-3">
           <Link
             href="/"
@@ -287,8 +295,8 @@ export default function PrototypePlayer() {
         </div>
       </header>
 
-      {/* Left rail — global controls only */}
-      <div className="absolute top-1/2 -translate-y-1/2 left-4 md:left-6 z-30 flex flex-col gap-2">
+      {/* Left rail — desktop only */}
+      <div className="hidden md:flex absolute top-1/2 -translate-y-1/2 left-4 md:left-6 z-30 flex-col gap-2">
         <RailButton
           onClick={() => setDrawerOpen(true)}
           icon={<Menu size={18} />}
@@ -313,15 +321,22 @@ export default function PrototypePlayer() {
         />
       </div>
 
-      {/* Phone stage — Android Large (412 × 892), fixed dimensions.
-          Wrapper reserves scaled space so layout stays correct; inner box
-          is always exactly 412×892 and scales uniformly to fit vertically. */}
-      <div className="absolute inset-0 flex items-center justify-center py-4 px-16 md:px-24 overflow-hidden">
+      {/* Phone stage — mobile: full viewport, no chrome; desktop: fixed 412×892 device */}
+      <div ref={stageRef} className="absolute inset-0 md:flex md:items-center md:justify-center md:py-4 md:px-24 md:overflow-hidden">
+        {/* Mobile: edge-to-edge screen render */}
         <div
-          className="relative shrink-0"
+          key={`mobile-${transitionKey}`}
+          className="md:hidden w-full h-full overflow-y-auto no-scrollbar bg-white text-neutral-800 animate-[fadeIn_260ms_cubic-bezier(0.2,0,0,1)]"
+        >
+          <PhoneFrameProvider>
+            <CurrentScreen />
+          </PhoneFrameProvider>
+        </div>
+
+        {/* Desktop: scaled phone device */}
+        <div
+          className="hidden md:block relative shrink-0"
           style={{
-            /* Reserve the *visible* footprint of the scaled phone so the flex
-               centering hugs the real rendered box, not the pre-scale one. */
             width: "min(412px, calc(412px * (100dvh - 32px) / 892px))",
             height: "min(892px, 100dvh - 32px)",
           }}
@@ -329,7 +344,6 @@ export default function PrototypePlayer() {
           <div
             className="absolute top-1/2 left-1/2 overflow-hidden rounded-[42px]"
             style={{
-              /* Fixed device size — Android Large. Never changes with viewport. */
               width: "412px",
               height: "892px",
               transform:
@@ -337,19 +351,27 @@ export default function PrototypePlayer() {
               transformOrigin: "center center",
             }}
           >
-            <div ref={stageRef} className="w-full h-full">
-              <div
-                key={transitionKey}
-                className="w-full h-full animate-[fadeIn_260ms_cubic-bezier(0.2,0,0,1)]"
-              >
-                <PhoneShell>
-                  <CurrentScreen />
-                </PhoneShell>
-              </div>
+            <div
+              key={`desktop-${transitionKey}`}
+              className="w-full h-full animate-[fadeIn_260ms_cubic-bezier(0.2,0,0,1)]"
+            >
+              <PhoneShell>
+                <CurrentScreen />
+              </PhoneShell>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Mobile FAB — opens screen navigator */}
+      <button
+        type="button"
+        onClick={() => setDrawerOpen(true)}
+        className="md:hidden fixed bottom-4 right-4 z-30 w-12 h-12 rounded-full bg-neutral-900 text-white shadow-e3 flex items-center justify-center"
+        aria-label="Open screen navigator"
+      >
+        <Menu size={20} />
+      </button>
 
       {/* Screen navigator drawer */}
       <div
