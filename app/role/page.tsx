@@ -58,20 +58,20 @@ export default function RoleSelectPage() {
               >
                 <Card
                   padding="lg"
-                  className={`transition-all ${
+                  className={`transition-all min-h-[172px] ${
                     active
                       ? "border-primary-600!"
                       : "hover:border-primary-300"
                   }`}
                 >
                   <div className="flex items-start gap-4">
-                    <div className="w-24 h-24 rounded-xl overflow-hidden shrink-0 relative bg-[#e5e7eb] p-1.5">
+                    <div className="w-24 h-24 rounded-xl overflow-hidden shrink-0 relative bg-[#e0f2fe]">
                       <Image
                         src={r.img}
                         alt={r.alt}
                         fill
                         sizes="96px"
-                        className="object-contain object-center rounded-lg"
+                        className="object-cover object-center"
                       />
                     </div>
                     <div className="flex-1 min-w-0">

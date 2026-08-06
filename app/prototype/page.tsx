@@ -326,7 +326,7 @@ export default function PrototypePlayer() {
         {/* Mobile: edge-to-edge screen render */}
         <div
           key={`mobile-${transitionKey}`}
-          className="md:hidden w-full h-full overflow-y-auto no-scrollbar bg-white text-neutral-800 animate-[fadeIn_260ms_cubic-bezier(0.2,0,0,1)]"
+          className="md:hidden w-full h-full overflow-y-auto no-scrollbar bg-white text-neutral-800 flex flex-col animate-[fadeIn_260ms_cubic-bezier(0.2,0,0,1)]"
         >
           <PhoneFrameProvider>
             <CurrentScreen />
@@ -367,7 +367,7 @@ export default function PrototypePlayer() {
       <button
         type="button"
         onClick={() => setDrawerOpen(true)}
-        className="md:hidden fixed bottom-4 right-4 z-30 w-12 h-12 rounded-full bg-neutral-900 text-white shadow-e3 flex items-center justify-center"
+        className="md:hidden fixed bottom-20 right-4 z-30 w-12 h-12 rounded-full bg-neutral-900 text-white shadow-e3 flex items-center justify-center"
         aria-label="Open screen navigator"
       >
         <Menu size={20} />

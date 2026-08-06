@@ -3,6 +3,7 @@
 import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
 import { Button, Stepper } from "@/components/ui";
 import { Calendar } from "lucide-react";
+import { ONBOARDING_STEPS } from "@/app/onboarding/steps";
 
 export default function PersonalInfoPage() {
   return (
@@ -11,7 +12,7 @@ export default function PersonalInfoPage() {
 
       <div className="px-4 pt-2 pb-32">
         <div className="pt-4 pb-8">
-          <Stepper current={1} total={5} />
+          <Stepper current={1} steps={ONBOARDING_STEPS} />
         </div>
 
         <h1 className="t-h2 font-bold text-neutral-800 tracking-tight">
@@ -71,10 +72,10 @@ function Field({
         {label} <span className="text-error">*</span>
       </label>
       <div
-        className={`flex items-center rounded-xl border bg-white overflow-hidden ${
+        className={`flex items-center rounded-xl border bg-white overflow-hidden transition-colors ${
           disabled
             ? "bg-neutral-25 border-[var(--border-subtle)]"
-            : "border-[var(--border-default)]"
+            : "border-[var(--border-default)] focus-within:border-primary-500"
         }`}
       >
         {multiline ? (

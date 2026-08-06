@@ -93,13 +93,13 @@
   --text-disabled: var(--color-neutral-300);
   --text-inverse: var(--color-neutral-0);
 
-  --surface-bg: var(--color-neutral-0);
+  --surface-bg: #f8fafc;
   --surface-card: var(--color-neutral-0);
   --surface-card-alt: var(--color-neutral-50);
 
-  --border-subtle: var(--color-neutral-100);
-  --border-default: var(--color-neutral-200);
-  --border-strong: var(--color-neutral-300);
+  --border-subtle: #e2e8f0;
+  --border-default: #e2e8f0;
+  --border-strong: #e2e8f0;
 }
 
 html {

@@ -3,6 +3,7 @@
 import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
 import { Button, Stepper } from "@/components/ui";
 import { AlertCircle } from "lucide-react";
+import { ONBOARDING_STEPS } from "@/app/onboarding/steps";
 
 export default function BankPage() {
   return (
@@ -11,7 +12,7 @@ export default function BankPage() {
 
       <div className="px-4 pt-2 pb-32">
         <div className="pt-4 pb-8">
-          <Stepper current={4} total={5} />
+          <Stepper current={4} steps={ONBOARDING_STEPS} />
         </div>
 
         <h1 className="t-h2 font-bold text-neutral-800 tracking-tight">

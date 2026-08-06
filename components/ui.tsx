@@ -1,8 +1,8 @@
 "use client";
 
-import { ReactNode, ButtonHTMLAttributes, HTMLAttributes, ElementType, Fragment } from "react";
+import { ReactNode, ButtonHTMLAttributes, HTMLAttributes, ElementType } from "react";
 import Link from "next/link";
-import { Check, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /* ============ TYPOGRAPHY ============
@@ -183,9 +183,9 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const cardVariants = {
-  default: "bg-white border border-[var(--border-subtle)]",
+  default: "bg-white border border-[var(--border-subtle)] shadow-e1",
   outlined: "bg-white border border-[var(--border-default)]",
-  elevated: "bg-white shadow-e1",
+  elevated: "bg-white shadow-e2",
   tinted: "bg-primary-50 border border-primary-100",
 };
 
@@ -448,42 +448,58 @@ export function ProgressBar({
 
 /* ============ STEPPER ============ */
 export function Stepper({
+  steps,
   current,
-  total,
   className,
 }: {
+  steps: Array<{ label: string; icon?: ReactNode }>;
   current: number;
-  total: number;
   className?: string;
 }) {
   return (
-    <div className={cn("flex items-center", className)}>
-      {Array.from({ length: total }).map((_, i) => {
+    <div className={cn("flex items-start gap-2", className)}>
+      {steps.map((s, i) => {
         const step = i + 1;
         const done = step < current;
         const active = step === current;
+        const filled = done || active;
         return (
-          <Fragment key={step}>
-            <div
-              className={cn(
-                "w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold transition-colors",
-                done && "bg-primary-600 text-white",
-                active && "bg-primary-600 text-white ring-4 ring-primary-100",
-                !done && !active && "bg-neutral-100 text-neutral-400"
-              )}
-              aria-current={active ? "step" : undefined}
-            >
-              {done ? <Check size={12} strokeWidth={3} /> : step}
-            </div>
-            {i < total - 1 && (
+          <div
+            key={s.label}
+            className="flex-1 min-w-0 flex flex-col items-start gap-1.5"
+            aria-current={active ? "step" : undefined}
+          >
+            {s.icon && (
               <div
                 className={cn(
-                  "flex-1 h-0.5 mx-1.5 rounded-full",
-                  done ? "bg-primary-600" : "bg-neutral-100"
+                  "transition-colors",
+                  active
+                    ? "text-primary-700"
+                    : done
+                      ? "text-primary-600"
+                      : "text-neutral-400"
                 )}
-              />
+              >
+                {s.icon}
+              </div>
             )}
-          </Fragment>
+            <div
+              className={cn(
+                "w-full h-1.5 rounded-full transition-colors",
+                filled ? "bg-primary-600" : "bg-neutral-200"
+              )}
+            />
+            <div
+              className={cn(
+                "t-caption truncate max-w-full transition-colors",
+                active
+                  ? "text-primary-700 font-semibold"
+                  : "text-neutral-400 font-medium"
+              )}
+            >
+              {s.label}
+            </div>
+          </div>
         );
       })}
     </div>

@@ -36,7 +36,7 @@ export function BottomTabBar({ active }: { active: string }) {
               )}
             >
               <div className="relative">
-                <Icon size={22} className={isActive ? "" : ""} />
+                <Icon size={28} className={isActive ? "" : ""} />
                 {tab.badge && (
                   <span className="absolute -top-1 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-error text-white t-micro font-semibold flex items-center justify-center">
                     {tab.badge}

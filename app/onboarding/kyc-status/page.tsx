@@ -38,19 +38,26 @@ export default function KycStatusPage() {
   return (
     <PhoneFrame label="Onboarding · KYC Status">
       <div className="px-4 pt-8 pb-32">
-        <Card padding="lg" className="text-center py-8 bg-neutral-100!">
-          <div className="w-32 h-32 mx-auto mb-4 relative">
-            <Image
-              src="/verification-in-progress.png"
-              alt="Verification in progress"
-              fill
-              sizes="128px"
-              className="object-contain"
-            />
-          </div>
+        <Card padding="lg" className="text-center py-8">
+          {!allDone && (
+            <div className="w-32 h-32 mx-auto mb-4 relative flex items-center justify-center">
+              <Image
+                src="/verification-in-progress.png"
+                alt="Verification in progress"
+                fill
+                sizes="128px"
+                className="object-contain"
+              />
+            </div>
+          )}
           <h1 className="t-h2 font-bold text-neutral-800">
-            {allDone ? "Verification Complete" : "Verification in Progress"}
+            {allDone ? "Verification Complete!" : "Verification in Progress"}
           </h1>
+          {allDone && (
+            <p className="t-body text-neutral-600 mt-2">
+              You&apos;re all set to start taking cases
+            </p>
+          )}
         </Card>
 
         <Card padding="lg" className="mt-4">
@@ -90,6 +97,23 @@ export default function KycStatusPage() {
           Continue to dashboard →
         </Button>
       </div>
+
+      <style jsx global>{`
+        @keyframes popIn {
+          0% {
+            opacity: 0;
+            transform: scale(0.4) rotate(-14deg);
+          }
+          60% {
+            opacity: 1;
+            transform: scale(1.12) rotate(6deg);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1) rotate(0deg);
+          }
+        }
+      `}</style>
     </PhoneFrame>
   );
 }

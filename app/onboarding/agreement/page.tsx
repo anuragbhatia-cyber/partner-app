@@ -3,6 +3,7 @@
 import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
 import { Button, Card, Stepper } from "@/components/ui";
 import { Check } from "lucide-react";
+import { ONBOARDING_STEPS } from "@/app/onboarding/steps";
 
 export default function AgreementPage() {
   return (
@@ -11,7 +12,7 @@ export default function AgreementPage() {
 
       <div className="px-4 pt-2 pb-32">
         <div className="pt-4 pb-8">
-          <Stepper current={5} total={5} />
+          <Stepper current={5} steps={ONBOARDING_STEPS} />
         </div>
 
         <h1 className="t-h2 font-bold text-neutral-800 tracking-tight">
@@ -19,7 +20,7 @@ export default function AgreementPage() {
         </h1>
 
         <Card padding="none" className="mt-5 overflow-hidden">
-          <div className="h-56 overflow-y-auto p-4 t-body-sm text-neutral-700 leading-relaxed space-y-3 bg-neutral-25 border-b border-[var(--border-subtle)]">
+          <div className="p-4 t-body-sm text-neutral-700 leading-relaxed space-y-3 bg-neutral-25">
             <p className="font-semibold text-neutral-800">Section 1: Scope of Services</p>
             <p>
               As a Lawyered Partner, you agree to provide on-road legal
@@ -38,9 +39,6 @@ export default function AgreementPage() {
               respect client confidentiality, and comply with all applicable
               laws and Bar Council rules...
             </p>
-          </div>
-          <div className="p-2 text-center t-caption text-neutral-400 border-b border-[var(--border-subtle)]">
-            Scroll to continue
           </div>
         </Card>
 

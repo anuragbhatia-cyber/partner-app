@@ -70,7 +70,7 @@ export default function HomeIdlePage() {
         <Card padding="lg">
           <h2 className="t-h3 font-semibold text-neutral-900 mb-2">This Week</h2>
           <div className="flex items-baseline justify-between mb-2">
-            <span className="t-h1 font-bold tabular text-neutral-800">
+            <span className="t-display font-bold tabular text-neutral-800">
               ₹4,200
             </span>
             <span className="t-body-sm text-neutral-500">7 of 50 cases</span>

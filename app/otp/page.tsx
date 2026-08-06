@@ -2,7 +2,7 @@
 
 import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
 import { Button } from "@/components/ui";
-import { Phone, ShieldCheck } from "lucide-react";
+import { Phone, ShieldCheck, Check } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 const RESEND_SECONDS = 28;
@@ -12,7 +12,14 @@ export default function OTPPage() {
   const [phone, setPhone] = useState("98765 43210");
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [resendIn, setResendIn] = useState(RESEND_SECONDS);
+  const [toast, setToast] = useState(false);
   const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = window.setTimeout(() => setToast(false), 2400);
+    return () => window.clearTimeout(t);
+  }, [toast]);
 
   useEffect(() => {
     if (step === "otp") {
@@ -32,6 +39,7 @@ export default function OTPPage() {
   const handleResend = () => {
     setOtp(["", "", "", ""]);
     setResendIn(RESEND_SECONDS);
+    setToast(true);
     inputsRef.current[0]?.focus();
   };
 
@@ -213,6 +221,32 @@ export default function OTPPage() {
           )}
         </div>
       </div>
+
+      {toast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed left-1/2 -translate-x-1/2 top-6 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full bg-neutral-900 text-white shadow-e3 t-body-sm font-medium animate-[toastIn_240ms_cubic-bezier(0.2,0,0,1)]"
+        >
+          <span className="w-5 h-5 rounded-full bg-success flex items-center justify-center">
+            <Check size={12} strokeWidth={3} />
+          </span>
+          OTP resent successfully
+        </div>
+      )}
+
+      <style jsx global>{`
+        @keyframes toastIn {
+          from {
+            opacity: 0;
+            transform: translate(-50%, -12px);
+          }
+          to {
+            opacity: 1;
+            transform: translate(-50%, 0);
+          }
+        }
+      `}</style>
     </PhoneFrame>
   );
 }

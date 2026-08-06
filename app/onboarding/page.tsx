@@ -2,6 +2,7 @@
 
 import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
 import { Button, Card } from "@/components/ui";
+import { CheckSquare } from "lucide-react";
 
 const STEPS = [
   { n: 1, title: "Personal", time: "~1 min" },
@@ -15,9 +16,9 @@ export default function OnboardingWelcomePage() {
   return (
     <PhoneFrame label="Onboarding · Welcome">
       <AppBar back href="/role" />
-      <div className="flex flex-col min-h-[calc(100%-4rem)] px-4 pt-4 pb-4">
+      <div className="px-4 pt-4 pb-4">
         <h1 className="t-h1 font-bold text-neutral-800 tracking-tight">
-          Let&apos;s get you set up
+          Let&apos;s Get You Set Up
         </h1>
         <p className="t-body text-neutral-500 mt-1">
           This takes about 5 minutes
@@ -47,15 +48,19 @@ export default function OnboardingWelcomePage() {
         </Card>
 
         <div className="mt-4">
-          <div className="t-caption font-semibold uppercase tracking-wider text-neutral-500 mb-1.5">
-            Keep handy
-          </div>
           <Card padding="sm">
-            <ul className="space-y-1 t-body-sm text-neutral-700">
+            <div className="t-caption font-semibold text-neutral-500 mb-3">
+              Keep handy
+            </div>
+            <ul className="grid grid-cols-2 gap-x-3 gap-y-4 t-body-sm text-neutral-700">
               {["Aadhaar", "PAN", "Bar Council ID", "Bank account details"].map(
                 (item) => (
                   <li key={item} className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-neutral-400" />
+                    <CheckSquare
+                      size={20}
+                      strokeWidth={2}
+                      className="text-primary-600 shrink-0"
+                    />
                     {item}
                   </li>
                 )
@@ -64,24 +69,25 @@ export default function OnboardingWelcomePage() {
           </Card>
         </div>
 
-        <div className="mt-auto pt-4 space-y-2">
-          <Button
-            variant="primary"
-            size="lg"
-            fullWidth
-            href="/onboarding/personal"
-          >
-            Let&apos;s Start →
-          </Button>
-          <Button
-            variant="secondary"
-            size="lg"
-            fullWidth
-            href="/home"
-          >
-            Skip for now
-          </Button>
-        </div>
+      </div>
+
+      <div className="sticky bottom-0 z-20 mt-auto bg-white/95 backdrop-blur border-t border-[var(--border-subtle)] px-4 pt-3 pb-4 space-y-2">
+        <Button
+          variant="primary"
+          size="lg"
+          fullWidth
+          href="/onboarding/personal"
+        >
+          Let&apos;s Start →
+        </Button>
+        <Button
+          variant="secondary"
+          size="lg"
+          fullWidth
+          href="/home"
+        >
+          Skip for now
+        </Button>
       </div>
     </PhoneFrame>
   );

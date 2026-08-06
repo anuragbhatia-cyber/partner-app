@@ -65,7 +65,7 @@ export function PhoneFrame({
           </div>
 
           {/* Screen content — absolute + internal scroll on desktop, natural doc flow on mobile */}
-          <div className="md:absolute md:inset-0 md:pt-9 md:overflow-y-auto no-scrollbar flex flex-col min-h-screen md:min-h-0">
+          <div className="md:absolute md:inset-0 md:pt-9 md:overflow-y-auto no-scrollbar flex flex-col min-h-screen md:min-h-0 bg-[var(--surface-bg)]">
             {children}
           </div>
         </div>

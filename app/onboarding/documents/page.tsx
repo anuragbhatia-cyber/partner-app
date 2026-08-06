@@ -13,6 +13,7 @@ import {
   Upload,
 } from "lucide-react";
 import { useState } from "react";
+import { ONBOARDING_STEPS } from "@/app/onboarding/steps";
 
 type DocKey = "aadhaar" | "pan" | "bar" | "selfie";
 
@@ -49,7 +50,7 @@ export default function DocumentsHubPage() {
 
       <div className="px-4 pt-2 pb-32">
         <div className="pt-4 pb-8">
-          <Stepper current={3} total={5} />
+          <Stepper current={3} steps={ONBOARDING_STEPS} />
         </div>
 
         <h1 className="t-h2 font-bold text-neutral-800 tracking-tight">
