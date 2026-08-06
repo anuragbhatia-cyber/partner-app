@@ -340,7 +340,7 @@ function IncidentStat({
 }) {
   const styles =
     tone === "primary"
-      ? "bg-primary-50 text-primary-700 border border-transparent"
+      ? "bg-white text-primary-700 border border-[var(--border-default)]"
       : "bg-white text-neutral-700 border border-[var(--border-default)]";
   return (
     <Link

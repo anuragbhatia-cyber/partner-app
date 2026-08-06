@@ -20,7 +20,7 @@ export default function CompleteCasePage() {
         {/* Case ref */}
         <div className="text-center py-3">
           <div className="t-caption font-mono text-neutral-500">
-            LWD-00842
+            IRN-100842
           </div>
           <div className="t-h3 font-semibold text-neutral-800 mt-1">
             Traffic Challan Dispute

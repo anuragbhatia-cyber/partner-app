@@ -84,7 +84,7 @@ export default function WalletHomePage() {
           <Card padding="none" className="divide-y divide-[var(--border-subtle)]">
             <TxnRow
               type="earning"
-              title="Challan LWD-00842"
+              title="Challan IRN-100842"
               date="Aug 3"
               amount="+₹850"
               status="Pending"
@@ -98,7 +98,7 @@ export default function WalletHomePage() {
             />
             <TxnRow
               type="earning"
-              title="RTO LWD-00838"
+              title="RTO IRN-100838"
               date="Aug 2"
               amount="+₹700"
               status="Settled"

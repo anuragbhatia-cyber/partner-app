@@ -1,7 +1,7 @@
 "use client";
 
 import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
-import { Button, Card, SectionLabel } from "@/components/ui";
+import { Button, Card } from "@/components/ui";
 import { useState } from "react";
 
 export default function ProfilePersonalInfoPage() {
@@ -21,7 +21,6 @@ export default function ProfilePersonalInfoPage() {
       <AppBar back href="/profile" title="Personal info" />
 
       <div className="px-4 py-4 pb-32 space-y-4">
-        <SectionLabel className="mb-2">Basic details</SectionLabel>
         <Card padding="lg" className="space-y-4">
           <Field
             label="Full name"

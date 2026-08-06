@@ -6,12 +6,12 @@ import { Search, Filter, ChevronRight } from "lucide-react";
 import Link from "next/link";
 
 const HISTORY = [
-  { date: "Aug 3", time: "10:24", id: "LWD-00842", type: "Challan", amount: "₹850", status: "completed" as const },
-  { date: "Aug 2", time: "14:12", id: "LWD-00838", type: "RTO Renewal", amount: "₹700", status: "completed" as const },
-  { date: "Aug 2", time: "09:30", id: "LWD-00834", type: "Challan Dispute", amount: "₹450", status: "completed" as const },
-  { date: "Aug 1", time: "16:22", id: "LWD-00821", type: "RTO Documentation", amount: "₹950", status: "completed" as const },
-  { date: "Jul 31", time: "11:00", id: "LWD-00817", type: "Traffic Case", status: "cancelled" as const },
-  { date: "Jul 30", time: "18:45", id: "LWD-00810", type: "Accident Scene", amount: "₹1,200", status: "completed" as const },
+  { date: "Aug 3", time: "10:24", id: "IRN-100842", type: "Challan", amount: "₹850", status: "completed" as const },
+  { date: "Aug 2", time: "14:12", id: "IRN-100838", type: "RTO Renewal", amount: "₹700", status: "completed" as const },
+  { date: "Aug 2", time: "09:30", id: "IRN-100834", type: "Challan Dispute", amount: "₹450", status: "completed" as const },
+  { date: "Aug 1", time: "16:22", id: "IRN-100821", type: "RTO Documentation", amount: "₹950", status: "completed" as const },
+  { date: "Jul 31", time: "11:00", id: "IRN-100817", type: "Traffic Case", status: "cancelled" as const },
+  { date: "Jul 30", time: "18:45", id: "IRN-100810", type: "Accident Scene", amount: "₹1,200", status: "completed" as const },
 ];
 
 export default function IncidentHistoryPage() {

@@ -35,16 +35,16 @@ function daysAgo(n: number, hh = 12, mm = 0): Date {
 }
 
 const PAST_CASES: PastCase[] = [
-  { caseId: "LWD-00838", type: "RTO Renewal", amount: "₹700", status: "completed", date: daysAgo(0, 9, 42) },
-  { caseId: "LWD-00821", type: "Challan Mgmt", amount: "₹450", status: "completed", date: daysAgo(1, 18, 14) },
-  { caseId: "LWD-00817", type: "Client no-show", status: "cancelled", date: daysAgo(2, 15, 0) },
-  { caseId: "LWD-00804", type: "Traffic Challan", amount: "₹850", status: "completed", date: daysAgo(3, 11, 20) },
-  { caseId: "LWD-00792", type: "Vehicle Transfer", amount: "₹1,200", status: "completed", date: daysAgo(4, 16, 5) },
-  { caseId: "LWD-00781", type: "RC Renewal", amount: "₹600", status: "completed", date: daysAgo(7, 10, 30) },
-  { caseId: "LWD-00775", type: "Client cancelled", status: "cancelled", date: daysAgo(8, 13, 0) },
-  { caseId: "LWD-00768", type: "Accident Response", amount: "₹1,500", status: "completed", date: daysAgo(9, 20, 45) },
-  { caseId: "LWD-00759", type: "Challan Mgmt", amount: "₹450", status: "completed", date: daysAgo(11, 12, 10) },
-  { caseId: "LWD-00744", type: "Court Appearance", amount: "₹2,000", status: "completed", date: daysAgo(14, 11, 0) },
+  { caseId: "IRN-100838", type: "RTO Renewal", amount: "₹700", status: "completed", date: daysAgo(0, 9, 42) },
+  { caseId: "IRN-100821", type: "Challan Mgmt", amount: "₹450", status: "completed", date: daysAgo(1, 18, 14) },
+  { caseId: "IRN-100817", type: "Client no-show", status: "cancelled", date: daysAgo(2, 15, 0) },
+  { caseId: "IRN-100804", type: "Traffic Challan", amount: "₹850", status: "completed", date: daysAgo(3, 11, 20) },
+  { caseId: "IRN-100792", type: "Vehicle Transfer", amount: "₹1,200", status: "completed", date: daysAgo(4, 16, 5) },
+  { caseId: "IRN-100781", type: "RC Renewal", amount: "₹600", status: "completed", date: daysAgo(7, 10, 30) },
+  { caseId: "IRN-100775", type: "Client cancelled", status: "cancelled", date: daysAgo(8, 13, 0) },
+  { caseId: "IRN-100768", type: "Accident Response", amount: "₹1,500", status: "completed", date: daysAgo(9, 20, 45) },
+  { caseId: "IRN-100759", type: "Challan Mgmt", amount: "₹450", status: "completed", date: daysAgo(11, 12, 10) },
+  { caseId: "IRN-100744", type: "Court Appearance", amount: "₹2,000", status: "completed", date: daysAgo(14, 11, 0) },
 ];
 
 const fmtISO = (d: Date) => d.toISOString().slice(0, 10);
@@ -90,19 +90,16 @@ export default function IncidentsListPage() {
       <AppBar title="Incidents" />
 
       <div className="px-4 pt-5 pb-3 bg-[var(--surface-bg)] space-y-3">
-        <Card padding="lg">
-          <h2 className="t-h3 font-semibold text-neutral-900 mb-3">Total incidents</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl px-4 py-3 bg-primary-50 text-primary-700 border border-transparent">
-              <div className="t-caption font-medium opacity-80">Active</div>
-              <div className="t-h1 font-bold tabular mt-1">{ACTIVE_COUNT}</div>
-            </div>
-            <div className="rounded-xl px-4 py-3 bg-white text-neutral-700 border border-[var(--border-default)]">
-              <div className="t-caption font-medium opacity-80">Past</div>
-              <div className="t-h1 font-bold tabular mt-1">{PAST_CASES.length}</div>
-            </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-xl px-4 py-3 bg-white text-primary-700 border border-[var(--border-default)]">
+            <div className="t-caption font-medium opacity-80">Active</div>
+            <div className="t-h1 font-bold tabular mt-1">{ACTIVE_COUNT}</div>
           </div>
-        </Card>
+          <div className="rounded-xl px-4 py-3 bg-white text-neutral-700 border border-[var(--border-default)]">
+            <div className="t-caption font-medium opacity-80">Past</div>
+            <div className="t-h1 font-bold tabular mt-1">{PAST_CASES.length}</div>
+          </div>
+        </div>
 
         <div className="flex bg-neutral-100 rounded-xl p-1">
           <TabButton active={tab === "active"} onClick={() => setTab("active")}>
@@ -223,7 +220,7 @@ type ActiveCase = {
 
 const ACTIVE_CASES: ActiveCase[] = [
   {
-    caseId: "LWD-00842",
+    caseId: "IRN-100842",
     type: "Traffic Challan",
     priority: "HIGH",
     status: "IN PROGRESS",
@@ -232,7 +229,7 @@ const ACTIVE_CASES: ActiveCase[] = [
     client: "Rajesh Kumar",
   },
   {
-    caseId: "LWD-00843",
+    caseId: "IRN-100843",
     type: "Accident Response",
     priority: "HIGH",
     status: "EN ROUTE",
@@ -241,7 +238,7 @@ const ACTIVE_CASES: ActiveCase[] = [
     client: "Anita Verma",
   },
   {
-    caseId: "LWD-00844",
+    caseId: "IRN-100844",
     type: "RTO Documentation",
     priority: "MEDIUM",
     status: "ARRIVED",
@@ -250,7 +247,7 @@ const ACTIVE_CASES: ActiveCase[] = [
     client: "Manoj Iyer",
   },
   {
-    caseId: "LWD-00845",
+    caseId: "IRN-100845",
     type: "Court Appearance",
     priority: "MEDIUM",
     status: "ACCEPTED",
@@ -318,10 +315,10 @@ function ActiveCaseCard({ case: c }: { case: ActiveCase }) {
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <span className="t-caption text-neutral-500">{c.elapsed}</span>
               <Chip tone={priorityTone} size="sm">
                 {c.priority}
               </Chip>
+              <span className="t-caption text-neutral-500">{c.elapsed}</span>
             </div>
           </div>
           <div className="flex items-center justify-between gap-2 mt-3">
