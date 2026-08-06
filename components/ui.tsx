@@ -310,7 +310,7 @@ interface ListRowProps {
   onClick?: () => void;
   showChevron?: boolean;
   className?: string;
-  tone?: "default" | "warning" | "success";
+  tone?: "default" | "warning" | "success" | "danger";
 }
 
 export function ListRow({
@@ -339,7 +339,9 @@ export function ListRow({
               ? "bg-warning-subtle text-warning-bold"
               : tone === "success"
                 ? "bg-success-subtle text-success-bold"
-                : "bg-neutral-100 text-neutral-600"
+                : tone === "danger"
+                  ? "bg-error-subtle text-error-bold"
+                  : "bg-neutral-100 text-neutral-600"
           )}
         >
           {icon}

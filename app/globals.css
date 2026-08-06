@@ -58,9 +58,10 @@
   --color-neutral-900: #18181b;
 
   /* ============ FONTS ============ */
-  --font-sans: var(--font-inter), "Noto Sans Devanagari", -apple-system,
+  --font-sans: var(--font-montserrat), "Noto Sans Devanagari", -apple-system,
     BlinkMacSystemFont, system-ui, sans-serif;
-  --font-mono: var(--font-jetbrains), "SF Mono", Menlo, Consolas, monospace;
+  --font-mono: var(--font-montserrat), "Noto Sans Devanagari", -apple-system,
+    BlinkMacSystemFont, system-ui, sans-serif;
 
   /* ============ RADIUS ============ */
   --radius-sm: 4px;

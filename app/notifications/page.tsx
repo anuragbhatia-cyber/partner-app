@@ -18,7 +18,7 @@ export default function NotificationsPage() {
               icon={IndianRupee}
               iconBg="bg-accent-100 text-accent-700"
               title="₹850 credited"
-              body="Case LWY-...00842"
+              body="Case LWD-00842"
               time="2 min ago"
               unread
             />

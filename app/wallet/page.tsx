@@ -47,24 +47,6 @@ export default function WalletHomePage() {
           </Button>
         </Card>
 
-        {/* Pending */}
-        <Card className="bg-warning-subtle/40 border-warning/20">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1">
-              <div className="t-h1 font-bold tabular text-warning-bold font-mono">
-                ₹1,700
-              </div>
-              <div className="t-body-sm text-warning-bold/80 mt-1">
-                From 2 cases · settling
-              </div>
-              <div className="t-caption text-warning-bold/60 mt-0.5">
-                Available by Aug 5
-              </div>
-            </div>
-            <ChevronRight size={16} className="text-warning-bold shrink-0" />
-          </div>
-        </Card>
-
         {/* This month */}
         <div>
           <SectionLabel className="mb-2">This Month</SectionLabel>
@@ -102,7 +84,7 @@ export default function WalletHomePage() {
           <Card padding="none" className="divide-y divide-[var(--border-subtle)]">
             <TxnRow
               type="earning"
-              title="Challan LWY-...00842"
+              title="Challan LWD-00842"
               date="Aug 3"
               amount="+₹850"
               status="Pending"
@@ -116,7 +98,7 @@ export default function WalletHomePage() {
             />
             <TxnRow
               type="earning"
-              title="RTO LWY-...00838"
+              title="RTO LWD-00838"
               date="Aug 2"
               amount="+₹700"
               status="Settled"

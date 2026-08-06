@@ -35,16 +35,16 @@ function daysAgo(n: number, hh = 12, mm = 0): Date {
 }
 
 const PAST_CASES: PastCase[] = [
-  { caseId: "LWY-2026-00838", type: "RTO Renewal", amount: "₹700", status: "completed", date: daysAgo(0, 9, 42) },
-  { caseId: "LWY-2026-00821", type: "Challan Mgmt", amount: "₹450", status: "completed", date: daysAgo(1, 18, 14) },
-  { caseId: "LWY-2026-00817", type: "Client no-show", status: "cancelled", date: daysAgo(2, 15, 0) },
-  { caseId: "LWY-2026-00804", type: "Traffic Challan", amount: "₹850", status: "completed", date: daysAgo(3, 11, 20) },
-  { caseId: "LWY-2026-00792", type: "Vehicle Transfer", amount: "₹1,200", status: "completed", date: daysAgo(4, 16, 5) },
-  { caseId: "LWY-2026-00781", type: "RC Renewal", amount: "₹600", status: "completed", date: daysAgo(7, 10, 30) },
-  { caseId: "LWY-2026-00775", type: "Client cancelled", status: "cancelled", date: daysAgo(8, 13, 0) },
-  { caseId: "LWY-2026-00768", type: "Accident Response", amount: "₹1,500", status: "completed", date: daysAgo(9, 20, 45) },
-  { caseId: "LWY-2026-00759", type: "Challan Mgmt", amount: "₹450", status: "completed", date: daysAgo(11, 12, 10) },
-  { caseId: "LWY-2026-00744", type: "Court Appearance", amount: "₹2,000", status: "completed", date: daysAgo(14, 11, 0) },
+  { caseId: "LWD-00838", type: "RTO Renewal", amount: "₹700", status: "completed", date: daysAgo(0, 9, 42) },
+  { caseId: "LWD-00821", type: "Challan Mgmt", amount: "₹450", status: "completed", date: daysAgo(1, 18, 14) },
+  { caseId: "LWD-00817", type: "Client no-show", status: "cancelled", date: daysAgo(2, 15, 0) },
+  { caseId: "LWD-00804", type: "Traffic Challan", amount: "₹850", status: "completed", date: daysAgo(3, 11, 20) },
+  { caseId: "LWD-00792", type: "Vehicle Transfer", amount: "₹1,200", status: "completed", date: daysAgo(4, 16, 5) },
+  { caseId: "LWD-00781", type: "RC Renewal", amount: "₹600", status: "completed", date: daysAgo(7, 10, 30) },
+  { caseId: "LWD-00775", type: "Client cancelled", status: "cancelled", date: daysAgo(8, 13, 0) },
+  { caseId: "LWD-00768", type: "Accident Response", amount: "₹1,500", status: "completed", date: daysAgo(9, 20, 45) },
+  { caseId: "LWD-00759", type: "Challan Mgmt", amount: "₹450", status: "completed", date: daysAgo(11, 12, 10) },
+  { caseId: "LWD-00744", type: "Court Appearance", amount: "₹2,000", status: "completed", date: daysAgo(14, 11, 0) },
 ];
 
 const fmtISO = (d: Date) => d.toISOString().slice(0, 10);
@@ -90,9 +90,35 @@ export default function IncidentsListPage() {
       <AppBar title="Incidents" />
 
       <div className="px-4 pt-5 pb-3 bg-[var(--surface-bg)] space-y-3">
+        <Card padding="lg">
+          <h2 className="t-h3 font-semibold text-neutral-900 mb-3">Total incidents</h2>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl px-4 py-3 bg-primary-50 text-primary-700 border border-transparent">
+              <div className="t-caption font-medium opacity-80">Active</div>
+              <div className="t-h1 font-bold tabular mt-1">{ACTIVE_COUNT}</div>
+            </div>
+            <div className="rounded-xl px-4 py-3 bg-white text-neutral-700 border border-[var(--border-default)]">
+              <div className="t-caption font-medium opacity-80">Past</div>
+              <div className="t-h1 font-bold tabular mt-1">{PAST_CASES.length}</div>
+            </div>
+          </div>
+        </Card>
+
+        <div className="flex bg-neutral-100 rounded-xl p-1">
+          <TabButton active={tab === "active"} onClick={() => setTab("active")}>
+            Active
+            <span className="ml-1.5 t-caption font-semibold text-neutral-500">
+              {ACTIVE_COUNT}
+            </span>
+          </TabButton>
+          <TabButton active={tab === "past"} onClick={() => setTab("past")}>
+            Past incidents
+          </TabButton>
+        </div>
+
         <div className="flex items-center gap-2">
           <div className="flex-1 flex items-center gap-2 h-11 px-3 rounded-lg border border-[var(--border-default)] bg-white focus-within:border-primary-500 transition-colors min-w-0">
-            <Search size={16} className="text-neutral-400 shrink-0" />
+            <Search size={16} className="text-neutral-600 shrink-0" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -101,7 +127,7 @@ export default function IncidentsListPage() {
                   ? "Search active"
                   : "Search past"
               }
-              className="flex-1 min-w-0 t-body text-neutral-800 bg-transparent focus:outline-none focus-visible:outline-none placeholder:text-neutral-400"
+              className="flex-1 min-w-0 t-body text-neutral-800 bg-transparent focus:outline-none focus-visible:outline-none placeholder:text-neutral-500"
             />
             {query && (
               <button
@@ -120,37 +146,11 @@ export default function IncidentsListPage() {
             onClick={() => setDateSheetOpen(true)}
             className="shrink-0 inline-flex items-center gap-1.5 h-11 px-3 rounded-lg border border-[var(--border-default)] bg-white hover:border-primary-300 transition-colors"
           >
-            <Calendar size={16} className="text-neutral-500 shrink-0" />
+            <Calendar size={16} className="text-neutral-600 shrink-0" />
             <span className="t-body-sm font-medium text-neutral-800 max-w-[110px] truncate">
               {dateLabel}
             </span>
           </button>
-        </div>
-
-        <Card padding="lg">
-          <h2 className="t-h3 font-semibold text-neutral-900 mb-3">Total incidents</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl px-4 py-3 bg-primary-50 text-primary-700">
-              <div className="t-caption font-medium opacity-80">Active</div>
-              <div className="t-h1 font-bold tabular mt-1">{ACTIVE_COUNT}</div>
-            </div>
-            <div className="rounded-xl px-4 py-3 bg-neutral-100 text-neutral-700">
-              <div className="t-caption font-medium opacity-80">Past</div>
-              <div className="t-h1 font-bold tabular mt-1">{PAST_CASES.length}</div>
-            </div>
-          </div>
-        </Card>
-
-        <div className="flex bg-neutral-100 rounded-xl p-1">
-          <TabButton active={tab === "active"} onClick={() => setTab("active")}>
-            Active
-            <span className="ml-1.5 t-caption font-semibold text-neutral-500">
-              {ACTIVE_COUNT}
-            </span>
-          </TabButton>
-          <TabButton active={tab === "past"} onClick={() => setTab("past")}>
-            Past incidents
-          </TabButton>
         </div>
       </div>
 
@@ -223,7 +223,7 @@ type ActiveCase = {
 
 const ACTIVE_CASES: ActiveCase[] = [
   {
-    caseId: "LWY-2026-00842",
+    caseId: "LWD-00842",
     type: "Traffic Challan",
     priority: "HIGH",
     status: "IN PROGRESS",
@@ -232,7 +232,7 @@ const ACTIVE_CASES: ActiveCase[] = [
     client: "Rajesh Kumar",
   },
   {
-    caseId: "LWY-2026-00843",
+    caseId: "LWD-00843",
     type: "Accident Response",
     priority: "HIGH",
     status: "EN ROUTE",
@@ -241,7 +241,7 @@ const ACTIVE_CASES: ActiveCase[] = [
     client: "Anita Verma",
   },
   {
-    caseId: "LWY-2026-00844",
+    caseId: "LWD-00844",
     type: "RTO Documentation",
     priority: "MEDIUM",
     status: "ARRIVED",
@@ -250,7 +250,7 @@ const ACTIVE_CASES: ActiveCase[] = [
     client: "Manoj Iyer",
   },
   {
-    caseId: "LWY-2026-00845",
+    caseId: "LWD-00845",
     type: "Court Appearance",
     priority: "MEDIUM",
     status: "ACCEPTED",
@@ -308,18 +308,21 @@ function ActiveCaseCard({ case: c }: { case: ActiveCase }) {
         className="overflow-hidden"
       >
         <div className="p-4">
-          <div className="flex items-start justify-between mb-2">
-            <div>
+          <div className="flex items-start justify-between mb-2 gap-2">
+            <div className="min-w-0">
               <div className="t-body-lg font-semibold text-neutral-800">
                 {c.type}
               </div>
               <div className="t-caption font-mono text-neutral-500 mt-0.5">
-                {c.caseId} · {c.elapsed}
+                {c.caseId}
               </div>
             </div>
-            <Chip tone={priorityTone} size="sm">
-              {c.priority}
-            </Chip>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="t-caption text-neutral-500">{c.elapsed}</span>
+              <Chip tone={priorityTone} size="sm">
+                {c.priority}
+              </Chip>
+            </div>
           </div>
           <div className="flex items-center justify-between gap-2 mt-3">
             <div className="flex items-center gap-2 t-body-sm text-neutral-600 min-w-0">

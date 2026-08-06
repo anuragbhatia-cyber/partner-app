@@ -10,13 +10,6 @@ export default function DocumentsPage() {
       <AppBar back href="/profile" title="Documents" />
 
       <div className="px-4 py-4 pb-24 space-y-4">
-        <Card className="bg-warning-subtle border-warning/20 flex items-center gap-2">
-          <AlertTriangle size={16} className="text-warning-bold shrink-0" />
-          <div className="t-body-sm text-warning-bold font-medium">
-            1 document expires in 28 days
-          </div>
-        </Card>
-
         <div>
           <SectionLabel className="mb-2">Identity</SectionLabel>
           <Card padding="none" className="divide-y divide-[var(--border-subtle)]">

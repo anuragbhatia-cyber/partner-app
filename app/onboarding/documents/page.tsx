@@ -72,7 +72,7 @@ export default function DocumentsHubPage() {
           ))}
         </div>
 
-        <Card className="mt-5 bg-[#fefce8]! border-transparent! flex items-start gap-2.5">
+        <Card className="mt-5 bg-[#fefce8]! border-transparent! shadow-none! flex items-start gap-2.5">
           <Sparkles size={16} className="text-warning-bold shrink-0 mt-0.5" />
           <div className="t-body font-medium text-warning-bold leading-relaxed">
             Tip: Ensure good lighting and all corners are visible

@@ -48,20 +48,20 @@ export default function OnboardingWelcomePage() {
         </Card>
 
         <div className="mt-4">
-          <Card padding="sm">
-            <div className="t-caption font-semibold text-neutral-500 mb-3">
+          <Card padding="lg">
+            <div className="t-caption font-semibold text-neutral-500 mb-4">
               Keep handy
             </div>
-            <ul className="grid grid-cols-2 gap-x-3 gap-y-4 t-body-sm text-neutral-700">
+            <ul className="grid grid-cols-2 gap-x-4 gap-y-4 t-body-lg font-medium text-neutral-900">
               {["Aadhaar", "PAN", "Bar Council ID", "Bank account details"].map(
                 (item) => (
-                  <li key={item} className="flex items-center gap-2">
+                  <li key={item} className="flex items-start gap-2.5">
                     <CheckSquare
                       size={20}
                       strokeWidth={2}
-                      className="text-primary-600 shrink-0"
+                      className="text-primary-600 shrink-0 mt-0.5"
                     />
-                    {item}
+                    <span className="leading-snug">{item}</span>
                   </li>
                 )
               )}

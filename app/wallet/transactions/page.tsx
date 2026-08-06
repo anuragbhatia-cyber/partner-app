@@ -12,15 +12,15 @@ import {
 
 const TXN = [
   { day: "Aug 3", items: [
-    { type: "earning", title: "LWY-2026-00842", subtitle: "Traffic Challan", amount: "+₹850", status: "pending" },
+    { type: "earning", title: "LWD-00842", subtitle: "Traffic Challan", amount: "+₹850", status: "pending" },
     { type: "deduction", title: "TDS on ₹850", amount: "-₹85", status: "" },
   ]},
   { day: "Aug 2", items: [
-    { type: "earning", title: "LWY-2026-00838", subtitle: "RTO Renewal", amount: "+₹700", status: "settled" },
+    { type: "earning", title: "LWD-00838", subtitle: "RTO Renewal", amount: "+₹700", status: "settled" },
     { type: "payout", title: "HDFC ****4521", subtitle: "UTR: N123456789", amount: "-₹8,000", status: "paid" },
   ]},
   { day: "Aug 1", items: [
-    { type: "deduction", title: "Late arrival penalty", subtitle: "Case LWY-...00821", amount: "-₹200", status: "review" },
+    { type: "deduction", title: "Late arrival penalty", subtitle: "Case LWD-00821", amount: "-₹200", status: "review" },
   ]},
 ];
 

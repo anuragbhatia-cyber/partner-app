@@ -5,8 +5,6 @@ import { Button, Card, ListRow, SectionLabel } from "@/components/ui";
 import {
   Bell,
   Globe,
-  Palette,
-  Database,
   MapPin,
   Camera,
   BellRing,
@@ -21,7 +19,6 @@ import {
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
-type Theme = "system" | "light" | "dark";
 type Language = "en" | "hi" | "kn";
 
 const LANGUAGE_LABEL: Record<Language, string> = {
@@ -29,21 +26,14 @@ const LANGUAGE_LABEL: Record<Language, string> = {
   hi: "हिन्दी (Hindi)",
   kn: "ಕನ್ನಡ (Kannada)",
 };
-const THEME_LABEL: Record<Theme, string> = {
-  system: "System",
-  light: "Light",
-  dark: "Dark",
-};
 
 type PermissionKey = "location" | "camera" | "notifications" | "storage";
 
 type SheetKind =
   | null
   | "language"
-  | "theme"
   | "signout"
   | "delete"
-  | "data"
   | "info-terms"
   | "info-privacy"
   | "info-agreement"
@@ -52,7 +42,6 @@ type SheetKind =
 export default function SettingsPage() {
   const [notifOn, setNotifOn] = useState(true);
   const [language, setLanguage] = useState<Language>("en");
-  const [theme, setTheme] = useState<Theme>("system");
   const [permissions, setPermissions] = useState<Record<PermissionKey, boolean>>({
     location: true,
     camera: true,
@@ -101,22 +90,6 @@ export default function SettingsPage() {
                 </span>
               }
               onClick={() => setSheet("language")}
-            />
-            <ListRow
-              icon={<Palette size={18} />}
-              title="Theme"
-              right={
-                <span className="t-caption text-neutral-500">
-                  {THEME_LABEL[theme]}
-                </span>
-              }
-              onClick={() => setSheet("theme")}
-            />
-            <ListRow
-              icon={<Database size={18} />}
-              title="Data usage"
-              subtitle="Manage cache & sync"
-              onClick={() => setSheet("data")}
             />
           </Card>
         </div>
@@ -192,7 +165,7 @@ export default function SettingsPage() {
             <ListRow
               icon={<Trash2 size={18} />}
               title={<span className="text-error">Delete account</span>}
-              tone="warning"
+              tone="danger"
               onClick={() => setSheet("delete")}
             />
           </Card>
@@ -216,22 +189,6 @@ export default function SettingsPage() {
         }}
         onClose={() => setSheet(null)}
       />
-      <ChoiceSheet
-        open={sheet === "theme"}
-        title="Theme"
-        subtitle="How the app looks"
-        options={[
-          { value: "system", label: "System default" },
-          { value: "light", label: "Light" },
-          { value: "dark", label: "Dark" },
-        ]}
-        value={theme}
-        onSelect={(v) => {
-          setTheme(v as Theme);
-          setSheet(null);
-        }}
-        onClose={() => setSheet(null)}
-      />
       {/* Confirm sheets */}
       <ConfirmSheet
         open={sheet === "signout"}
@@ -251,11 +208,7 @@ export default function SettingsPage() {
         onClose={() => setSheet(null)}
       />
 
-      {/* Data + info sheets */}
-      <DataUsageSheet
-        open={sheet === "data"}
-        onClose={() => setSheet(null)}
-      />
+      {/* Info sheets */}
       <InfoSheet
         open={sheet === "info-terms"}
         title="Terms & Conditions"
@@ -528,65 +481,6 @@ function ConfirmSheet({
         </Button>
         <Button variant="ghost" size="lg" fullWidth onClick={onClose}>
           Cancel
-        </Button>
-      </div>
-    </Sheet>
-  );
-}
-
-function DataUsageSheet({
-  open,
-  onClose,
-}: {
-  open: boolean;
-  onClose: () => void;
-}) {
-  const [autoSync, setAutoSync] = useState(true);
-  const [cacheCleared, setCacheCleared] = useState(false);
-
-  return (
-    <Sheet open={open} onClose={onClose}>
-      <SheetHeader
-        title="Data usage"
-        subtitle="Cache and sync preferences"
-        onClose={onClose}
-      />
-      <div className="px-4 py-3 space-y-3">
-        <div className="flex items-center gap-3 px-3 py-3 rounded-xl border border-[var(--border-subtle)]">
-          <div className="flex-1">
-            <div className="t-body font-semibold text-neutral-800">
-              Auto-sync
-            </div>
-            <div className="t-caption text-neutral-500 mt-0.5">
-              Keep cases in sync in the background
-            </div>
-          </div>
-          <Switch on={autoSync} onChange={() => setAutoSync((v) => !v)} />
-        </div>
-        <div className="px-3 py-3 rounded-xl border border-[var(--border-subtle)]">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="t-body font-semibold text-neutral-800">
-                App cache
-              </div>
-              <div className="t-caption text-neutral-500 mt-0.5">
-                {cacheCleared ? "0 MB" : "48 MB"}
-              </div>
-            </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setCacheCleared(true)}
-              disabled={cacheCleared}
-            >
-              {cacheCleared ? "Cleared" : "Clear"}
-            </Button>
-          </div>
-        </div>
-      </div>
-      <div className="px-4 pt-1 pb-5">
-        <Button variant="primary" size="lg" fullWidth onClick={onClose}>
-          Done
         </Button>
       </div>
     </Sheet>

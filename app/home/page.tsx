@@ -2,7 +2,7 @@
 
 import { PhoneFrame } from "@/components/PhoneFrame";
 import { BottomTabBar } from "@/components/BottomTabBar";
-import { Avatar, Button, Card, ProgressBar } from "@/components/ui";
+import { Avatar, Button, Card } from "@/components/ui";
 import {
   Bell,
   Wallet as WalletIcon,
@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useMemo, useState } from "react";
 import { ACTIVE_COUNT, PAST_COUNT } from "@/app/incidents/page";
 
@@ -49,10 +50,10 @@ export default function HomeIdlePage() {
             aria-label="Change working area"
           >
             <span className="w-2 h-2 rounded-full bg-success shrink-0" />
-            <span className="t-caption font-medium text-neutral-600 truncate">
+            <span className="t-caption font-medium text-neutral-700 truncate">
               Online · {area.label}
             </span>
-            <ChevronDown size={13} className="text-neutral-400 shrink-0" />
+            <ChevronDown size={13} className="text-neutral-600 shrink-0" />
           </button>
         </div>
         <Link
@@ -67,40 +68,61 @@ export default function HomeIdlePage() {
       <div className="px-4 pt-4 pb-24 space-y-4">
 
         {/* Weekly goal */}
-        <Card padding="lg">
-          <h2 className="t-h3 font-semibold text-neutral-900 mb-2">This Week</h2>
-          <div className="flex items-baseline justify-between mb-2">
-            <span className="t-display font-bold tabular text-neutral-800">
-              ₹4,200
-            </span>
-            <span className="t-body-sm text-neutral-500">7 of 50 cases</span>
+        <Card
+          padding="lg"
+          className="relative overflow-hidden border-transparent! bg-white bg-[radial-gradient(circle_at_top_right,#fdf1c1_0%,#fef7dc_20%,#fffbee_38%,#ffffff_60%)]"
+        >
+          <div className="relative z-10">
+            <div className="pr-20">
+              <h2 className="t-body italic font-semibold text-neutral-700">
+                This Week Earnings
+              </h2>
+              <div className="mt-2 t-h1 italic font-extrabold tabular text-success-bold leading-none">
+                ₹4,200
+              </div>
+            </div>
+            <div className="mt-5 h-3 w-full rounded-full bg-success-subtle ring-1 ring-inset ring-success/15 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-success-bold transition-all"
+                style={{ width: "14%" }}
+              />
+            </div>
+            <div className="mt-3 t-body font-medium text-neutral-900 whitespace-nowrap">
+              43 more cases to hit your weekly goal
+            </div>
           </div>
-          <ProgressBar value={14} tone="primary" />
-          <div className="mt-3 t-caption text-neutral-500">
-            43 more cases to hit your weekly goal
+          <div className="pointer-events-none absolute top-3 right-3 w-16 h-16">
+            <Image
+              src="/wallet-earnings.png"
+              alt="Wallet"
+              fill
+              sizes="192px"
+              quality={95}
+              className="object-contain"
+            />
           </div>
           <Link
             href="/wallet"
-            className="mt-4 -mx-3 flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-neutral-50 transition-colors"
+            className="relative z-10 mt-5 -mx-5 -mb-2 flex items-center gap-3 px-5 pt-4 pb-2 border-t border-[var(--border-subtle)] hover:bg-white/50 transition-colors"
           >
-            <div className="w-9 h-9 rounded-lg bg-primary-50 flex items-center justify-center text-primary-700 shrink-0">
-              <WalletIcon size={18} />
+            <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center text-primary-700 shrink-0">
+              <WalletIcon size={15} />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="t-body font-semibold text-neutral-800">
+              <div className="t-body-lg font-semibold text-neutral-800">
                 Wallet
               </div>
-              <div className="t-caption text-neutral-500 mt-0.5">
+              <div className="t-caption text-neutral-700 mt-0.5">
                 View balance &amp; payouts
               </div>
             </div>
-            <ChevronRight size={16} className="text-neutral-300 shrink-0" />
+            <ChevronRight size={18} className="text-neutral-600 shrink-0" />
           </Link>
         </Card>
 
         {/* Quick actions */}
         <Card padding="none" className="p-2.5">
-          <h2 className="t-h3 font-semibold text-neutral-900 mb-2 px-1">Quick Access</h2>
+          <h2 className="t-h3 font-semibold text-neutral-900 mb-4 px-1">Quick Access</h2>
           <div className="grid grid-cols-2 gap-1.5">
             <QuickAction icon={BookOpen} label="SOP" href="#" />
             <QuickAction icon={Phone} label="Contact" href="/profile/support" />
@@ -109,7 +131,7 @@ export default function HomeIdlePage() {
 
         {/* Incidents summary */}
         <Card padding="lg">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="t-h3 font-semibold text-neutral-900">Total incidents</h2>
             <Link
               href="/incidents"
@@ -197,14 +219,14 @@ function LocationPickerSheet({
             <div className="t-h3 font-bold text-neutral-800">
               Working area
             </div>
-            <div className="t-caption text-neutral-500 mt-0.5">
+            <div className="t-caption text-neutral-700 mt-0.5">
               You&apos;ll only receive cases from here
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="w-9 h-9 -mr-1 shrink-0 rounded-full hover:bg-neutral-50 flex items-center justify-center text-neutral-500"
+            className="w-9 h-9 -mr-1 shrink-0 rounded-full hover:bg-neutral-50 flex items-center justify-center text-neutral-700"
             aria-label="Close"
           >
             <X size={18} />
@@ -213,19 +235,19 @@ function LocationPickerSheet({
 
         <div className="px-4 pb-3 shrink-0">
           <div className="flex items-center gap-2 h-11 px-3 rounded-lg border border-[var(--border-default)] bg-white focus-within:border-primary-500 transition-colors">
-            <Search size={16} className="text-neutral-400 shrink-0" />
+            <Search size={16} className="text-neutral-600 shrink-0" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search area"
-              className="flex-1 t-body text-neutral-800 focus:outline-none placeholder:text-neutral-400"
+              className="flex-1 t-body text-neutral-800 focus:outline-none placeholder:text-neutral-500"
             />
           </div>
         </div>
 
         <div className="overflow-y-auto no-scrollbar flex-1 px-4 pb-4">
           {filtered.length === 0 ? (
-            <div className="text-center py-10 t-body-sm text-neutral-400">
+            <div className="text-center py-10 t-body-sm text-neutral-600">
               No areas match &ldquo;{query}&rdquo;
             </div>
           ) : (
@@ -247,7 +269,7 @@ function LocationPickerSheet({
                         className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
                           active
                             ? "bg-primary-100 text-primary-700"
-                            : "bg-neutral-100 text-neutral-500"
+                            : "bg-neutral-100 text-neutral-700"
                         }`}
                       >
                         <MapPin size={16} />
@@ -256,7 +278,7 @@ function LocationPickerSheet({
                         <div className="t-body font-semibold text-neutral-800 truncate">
                           {a.label}
                         </div>
-                        <div className="t-caption text-neutral-500 truncate mt-0.5">
+                        <div className="t-caption text-neutral-700 truncate mt-0.5">
                           {a.meta}
                         </div>
                       </div>
@@ -318,8 +340,8 @@ function IncidentStat({
 }) {
   const styles =
     tone === "primary"
-      ? "bg-primary-50 text-primary-700"
-      : "bg-neutral-100 text-neutral-700";
+      ? "bg-primary-50 text-primary-700 border border-transparent"
+      : "bg-white text-neutral-700 border border-[var(--border-default)]";
   return (
     <Link
       href={href}

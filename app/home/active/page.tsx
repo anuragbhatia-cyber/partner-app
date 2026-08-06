@@ -67,7 +67,7 @@ export default function HomeActivePage() {
           <div className="px-4 py-3 bg-primary-50/50 border-b border-[var(--border-subtle)]">
             <div className="flex items-center justify-between mb-1">
               <span className="t-caption font-mono text-neutral-500">
-                LWY-2026-00842
+                LWD-00842
               </span>
               <Chip tone="error" dot size="sm">
                 HIGH
