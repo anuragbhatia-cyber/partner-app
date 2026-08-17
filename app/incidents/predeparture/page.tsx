@@ -12,7 +12,6 @@ import {
   MoreVertical,
   MapPin,
   Phone,
-  MessageCircle,
   ChevronRight,
   Navigation,
 } from "lucide-react";
@@ -97,14 +96,10 @@ export default function PreDeparturePage() {
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 border-t border-[var(--border-subtle)]">
-              <button className="flex items-center justify-center gap-2 py-3 t-body-sm font-semibold text-success-bold hover:bg-success-subtle/50">
+            <div className="border-t border-[var(--border-subtle)]">
+              <button className="w-full flex items-center justify-center gap-2 py-3 t-body-sm font-semibold text-success-bold hover:bg-success-subtle/50">
                 <Phone size={16} />
                 Call
-              </button>
-              <button className="flex items-center justify-center gap-2 py-3 t-body-sm font-semibold text-info-bold hover:bg-info-subtle/50 border-l border-[var(--border-subtle)]">
-                <MessageCircle size={16} />
-                Message
               </button>
             </div>
           </Card>

@@ -11,7 +11,6 @@ import {
 import {
   MoreVertical,
   Phone,
-  MessageCircle,
   ChevronRight,
   Plus,
 } from "lucide-react";
@@ -147,14 +146,9 @@ function DetailsPanel() {
                 RTO Coordinator · AGT-2456
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button className="w-9 h-9 rounded-full bg-success-subtle flex items-center justify-center text-success-bold">
-                <Phone size={14} />
-              </button>
-              <button className="w-9 h-9 rounded-full bg-info-subtle flex items-center justify-center text-info-bold">
-                <MessageCircle size={14} />
-              </button>
-            </div>
+            <button className="w-9 h-9 rounded-full bg-success-subtle flex items-center justify-center text-success-bold">
+              <Phone size={14} />
+            </button>
           </div>
         </Card>
       </div>

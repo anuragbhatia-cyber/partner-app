@@ -6,17 +6,17 @@ import Link from "next/link";
 
 export default function SplashPage() {
   return (
-    <PhoneFrame label="Splash">
+    <PhoneFrame label="Splash" statusBarClassName="bg-black text-white">
       <Link
         href="/otp"
-        className="absolute inset-0 z-50 flex flex-col items-center justify-between py-16 bg-gradient-to-b from-neutral-800 via-neutral-900 to-black text-white active:opacity-90 transition-opacity"
+        className="flex-1 flex flex-col items-center justify-between py-16 bg-black text-white active:opacity-90 transition-opacity"
       >
         <div />
         <Image
           src="/lawyered-logo.png"
           alt="Lawyered"
-          width={640}
-          height={160}
+          width={841}
+          height={259}
           priority
           className="w-[70%] max-w-[280px] h-auto"
         />

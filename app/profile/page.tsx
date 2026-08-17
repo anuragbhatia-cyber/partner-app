@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
+import { PhoneFrame } from "@/components/PhoneFrame";
 import { BottomTabBar } from "@/components/BottomTabBar";
 import { Button, Card, Chip, ListRow, SectionLabel } from "@/components/ui";
 import {
@@ -19,6 +19,7 @@ import {
   Trash2,
   X,
   Pencil,
+  BookOpen,
 } from "lucide-react";
 import { useRef, useState } from "react";
 
@@ -53,9 +54,7 @@ export default function ProfileHomePage() {
 
   return (
     <PhoneFrame label="Profile · Home">
-      <AppBar title="Profile" />
-
-      <div className="px-4 py-4 pb-24 space-y-4">
+      <div className="px-4 pt-4 pb-24 space-y-4">
         {/* Profile header */}
         <Card padding="lg" className="text-center">
           <button
@@ -202,6 +201,11 @@ export default function ProfileHomePage() {
         <div>
           <SectionLabel className="mb-2">Help &amp; Settings</SectionLabel>
           <Card padding="none" className="divide-y divide-[var(--border-subtle)]">
+            <ListRow
+              icon={<BookOpen size={18} />}
+              title="SOP"
+              href="#"
+            />
             <ListRow
               icon={<MessageCircle size={18} />}
               title="Support"

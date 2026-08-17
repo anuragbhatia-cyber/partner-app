@@ -1,16 +1,17 @@
 "use client";
 
 import { PhoneFrame } from "@/components/PhoneFrame";
-import { Button, Card, ListRow } from "@/components/ui";
-import { Check, MessageCircle } from "lucide-react";
+import { Button, Card } from "@/components/ui";
+import { Check } from "lucide-react";
 import Image from "next/image";
+import Lottie from "lottie-react";
 import { useEffect, useState } from "react";
+import confettiAnimation from "./confetti.json";
 
 const STEPS = [
   "Personal info",
   "Professional details",
   "Document verification",
-  "Bank verification",
   "Final approval",
 ];
 
@@ -37,6 +38,15 @@ export default function KycStatusPage() {
 
   return (
     <PhoneFrame label="Onboarding · KYC Status">
+      {allDone && (
+        <div className="pointer-events-none absolute inset-0 z-40 flex items-start justify-center">
+          <Lottie
+            animationData={confettiAnimation}
+            loop={false}
+            className="w-full h-full"
+          />
+        </div>
+      )}
       <div className="px-4 pt-8 pb-32">
         <Card padding="lg" className="text-center py-8">
           {!allDone && (
@@ -48,6 +58,11 @@ export default function KycStatusPage() {
                 sizes="128px"
                 className="object-contain"
               />
+            </div>
+          )}
+          {allDone && (
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-success-subtle flex items-center justify-center">
+              <Check size={32} strokeWidth={3} className="text-success-bold" />
             </div>
           )}
           <h1 className="t-h2 font-bold text-neutral-800">
@@ -75,15 +90,6 @@ export default function KycStatusPage() {
           </ol>
         </Card>
 
-        <div className="mt-6 space-y-2">
-          <Card padding="none">
-            <ListRow
-              icon={<MessageCircle size={18} />}
-              title="Contact support"
-              href="/profile/support"
-            />
-          </Card>
-        </div>
       </div>
 
       <div className="sticky bottom-0 z-20 mt-auto bg-white/95 backdrop-blur border-t border-[var(--border-subtle)] px-4 pt-3 pb-4">

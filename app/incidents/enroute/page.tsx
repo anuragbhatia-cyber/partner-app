@@ -10,7 +10,6 @@ import {
 import {
   MoreVertical,
   Phone,
-  MessageCircle,
   ChevronRight,
   Clock,
   Navigation2,
@@ -108,14 +107,9 @@ export default function EnRoutePage() {
                   Rajesh Kumar
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button className="w-10 h-10 rounded-full bg-success-subtle flex items-center justify-center text-success-bold">
-                  <Phone size={16} />
-                </button>
-                <button className="w-10 h-10 rounded-full bg-info-subtle flex items-center justify-center text-info-bold">
-                  <MessageCircle size={16} />
-                </button>
-              </div>
+              <button className="w-10 h-10 rounded-full bg-success-subtle flex items-center justify-center text-success-bold">
+                <Phone size={16} />
+              </button>
             </div>
           </Card>
         </div>

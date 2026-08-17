@@ -1,19 +1,19 @@
 "use client";
 
 import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
-import { Button, Card, Stepper } from "@/components/ui";
+import { Button, Card } from "@/components/ui";
 import {
-  CheckCircle2,
-  Circle,
   ChevronRight,
   Sparkles,
   Camera,
   Image as ImageIcon,
   X,
   Upload,
+  ArrowUp,
+  Check,
 } from "lucide-react";
 import { useState } from "react";
-import { ONBOARDING_STEPS } from "@/app/onboarding/steps";
+import { OnboardingStepBar } from "@/app/onboarding/steps";
 
 type DocKey = "aadhaar" | "pan" | "bar" | "selfie";
 
@@ -48,12 +48,10 @@ export default function DocumentsHubPage() {
     <PhoneFrame label="Onboarding · Documents">
       <AppBar back href="/onboarding/personal" title="Documents" />
 
-      <div className="px-4 pt-2 pb-32">
-        <div className="pt-4 pb-8">
-          <Stepper current={3} steps={ONBOARDING_STEPS} />
-        </div>
+      <div className="px-4 pt-4 pb-32">
+        <OnboardingStepBar current={3} label="Documents" />
 
-        <h1 className="t-h2 font-bold text-neutral-800 tracking-tight">
+        <h1 className="t-h1 font-bold text-neutral-800 tracking-tight mt-6">
           Upload Documents
         </h1>
         <p className="t-body text-neutral-500 mt-2">
@@ -72,12 +70,17 @@ export default function DocumentsHubPage() {
           ))}
         </div>
 
-        <Card className="mt-5 bg-[#fefce8]! border-transparent! shadow-none! flex items-start gap-2.5">
-          <Sparkles size={16} className="text-warning-bold shrink-0 mt-0.5" />
-          <div className="t-body font-medium text-warning-bold leading-relaxed">
+        <Card className="mt-5 bg-[#FEF3C7]! border-transparent! shadow-none! flex items-start gap-2.5">
+          <Sparkles size={16} className="text-[#B45309] shrink-0 mt-0.5" />
+          <div className="t-body font-medium text-[#B45309] leading-relaxed">
             Tip: Ensure good lighting and all corners are visible
           </div>
         </Card>
+
+        <div className="space-y-3 mt-5">
+          <ConsentRow label="I have read and accept the Partner Agreement" />
+          <ConsentRow label="I consent to KYC verification" />
+        </div>
       </div>
 
       <div className="sticky bottom-0 z-20 mt-auto bg-white/95 backdrop-blur border-t border-[var(--border-subtle)] px-4 pt-3 pb-4">
@@ -85,7 +88,7 @@ export default function DocumentsHubPage() {
           variant="primary"
           size="lg"
           fullWidth
-          href="/onboarding/bank"
+          href="/onboarding/kyc-status"
         >
           Continue →
         </Button>
@@ -120,12 +123,25 @@ function DocCard({
       <Card padding="md" className="hover:border-primary-300 transition-colors">
         <div className="flex items-center gap-3">
           {done ? (
-            <div className="w-9 h-9 rounded-lg bg-success-subtle flex items-center justify-center text-success-bold shrink-0">
-              <CheckCircle2 size={18} />
-            </div>
+            <svg
+              width="40"
+              height="40"
+              viewBox="0 0 40 40"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="shrink-0"
+            >
+              <rect width="40" height="40" rx="20" fill="#ECFDF5" />
+              <path
+                d="M25.9993 15.5L17.7501 23.7494L14.0005 19.9997"
+                stroke="#059669"
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+            </svg>
           ) : (
-            <div className="w-9 h-9 rounded-lg bg-neutral-100 flex items-center justify-center text-neutral-400 shrink-0">
-              <Circle size={18} />
+            <div className="w-10 h-10 rounded-full bg-[#EEF2FF] flex items-center justify-center text-[#6366F1] shrink-0">
+              <ArrowUp size={18} strokeWidth={2.5} />
             </div>
           )}
           <div className="flex-1 min-w-0">
@@ -141,7 +157,7 @@ function DocCard({
               </div>
             )}
           </div>
-          <ChevronRight size={16} className="text-neutral-300 shrink-0" />
+          <ChevronRight size={16} className="text-neutral-900 shrink-0" />
         </div>
       </Card>
     </button>
@@ -228,6 +244,17 @@ function UploadSheet({
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ConsentRow({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="w-5 h-5 rounded-md bg-success flex items-center justify-center shrink-0">
+        <Check size={12} className="text-white" strokeWidth={3} />
+      </div>
+      <span className="t-body text-neutral-800">{label}</span>
     </div>
   );
 }

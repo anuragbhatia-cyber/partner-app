@@ -5,10 +5,6 @@ import { Button, Card, ListRow, SectionLabel } from "@/components/ui";
 import {
   Bell,
   Globe,
-  MapPin,
-  Camera,
-  BellRing,
-  FileText,
   Shield,
   Scroll,
   Info,
@@ -27,8 +23,6 @@ const LANGUAGE_LABEL: Record<Language, string> = {
   kn: "ಕನ್ನಡ (Kannada)",
 };
 
-type PermissionKey = "location" | "camera" | "notifications" | "storage";
-
 type SheetKind =
   | null
   | "language"
@@ -42,16 +36,7 @@ type SheetKind =
 export default function SettingsPage() {
   const [notifOn, setNotifOn] = useState(true);
   const [language, setLanguage] = useState<Language>("en");
-  const [permissions, setPermissions] = useState<Record<PermissionKey, boolean>>({
-    location: true,
-    camera: true,
-    notifications: true,
-    storage: true,
-  });
   const [sheet, setSheet] = useState<SheetKind>(null);
-
-  const togglePerm = (k: PermissionKey) =>
-    setPermissions((p) => ({ ...p, [k]: !p[k] }));
 
   const signOut = () => {
     setSheet(null);
@@ -90,37 +75,6 @@ export default function SettingsPage() {
                 </span>
               }
               onClick={() => setSheet("language")}
-            />
-          </Card>
-        </div>
-
-        {/* Permissions */}
-        <div>
-          <SectionLabel className="mb-2">Permissions</SectionLabel>
-          <Card padding="none" className="divide-y divide-[var(--border-subtle)]">
-            <PermissionRow
-              icon={<MapPin size={18} />}
-              label="Location"
-              on={permissions.location}
-              onToggle={() => togglePerm("location")}
-            />
-            <PermissionRow
-              icon={<Camera size={18} />}
-              label="Camera"
-              on={permissions.camera}
-              onToggle={() => togglePerm("camera")}
-            />
-            <PermissionRow
-              icon={<BellRing size={18} />}
-              label="Notifications"
-              on={permissions.notifications}
-              onToggle={() => togglePerm("notifications")}
-            />
-            <PermissionRow
-              icon={<FileText size={18} />}
-              label="Storage"
-              on={permissions.storage}
-              onToggle={() => togglePerm("storage")}
             />
           </Card>
         </div>
@@ -260,7 +214,6 @@ export default function SettingsPage() {
       <InfoSheet
         open={sheet === "info-app"}
         title="App info"
-        subtitle="Build details"
         onClose={() => setSheet(null)}
       >
         <div className="space-y-2 t-body">
@@ -292,42 +245,6 @@ function Switch({ on, onChange }: { on: boolean; onChange: () => void }) {
           on ? "translate-x-5" : "translate-x-0.5"
         }`}
       />
-    </button>
-  );
-}
-
-function PermissionRow({
-  icon,
-  label,
-  on,
-  onToggle,
-}: {
-  icon: ReactNode;
-  label: string;
-  on: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-neutral-50/50 transition-colors text-left"
-    >
-      <div className="w-8 h-8 rounded-lg bg-neutral-50 flex items-center justify-center text-neutral-600 shrink-0 [&>svg]:w-4 [&>svg]:h-4">
-        {icon}
-      </div>
-      <span className="t-body font-medium text-neutral-800 flex-1">
-        {label}
-      </span>
-      <span
-        className={`t-caption font-semibold px-2 py-0.5 rounded-full ${
-          on
-            ? "bg-success-subtle text-success-bold"
-            : "bg-neutral-100 text-neutral-500"
-        }`}
-      >
-        {on ? "On" : "Off"}
-      </span>
     </button>
   );
 }

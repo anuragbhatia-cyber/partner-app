@@ -9,10 +9,11 @@ const RESEND_SECONDS = 28;
 
 export default function OTPPage() {
   const [step, setStep] = useState<"phone" | "otp">("phone");
-  const [phone, setPhone] = useState("98765 43210");
+  const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [resendIn, setResendIn] = useState(RESEND_SECONDS);
   const [toast, setToast] = useState(false);
+  const [waReminders, setWaReminders] = useState(true);
   const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
 
   useEffect(() => {
@@ -97,28 +98,26 @@ export default function OTPPage() {
         <AppBar back href="/splash" />
 
         <div className="flex flex-col min-h-[calc(100%-4rem)] px-4 pt-6 pb-6">
-          <div className="w-14 h-14 rounded-2xl bg-primary-100 flex items-center justify-center text-primary-700 mb-5">
-            <Phone size={26} />
+          <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center text-primary-700 mb-4">
+            <Phone size={22} />
           </div>
           <h1 className="t-h1 font-bold text-neutral-800 tracking-tight">
             Enter Your Mobile Number
           </h1>
-          <p className="t-body text-neutral-500 mt-2">
-            We&apos;ll send an OTP to verify
-          </p>
 
-          <div className="mt-8">
-            <div className="flex items-stretch rounded-xl border border-[var(--border-default)] bg-white overflow-hidden focus-within:border-primary-500 transition-colors">
-              <div className="flex items-center px-3 border-r border-[var(--border-subtle)] bg-neutral-25">
-                <span className="t-body-lg font-semibold text-neutral-700">
-                  +91
-                </span>
+          <div className="mt-5">
+            <div className="flex items-stretch h-12 rounded-xl border border-[var(--border-default)] bg-white overflow-hidden focus-within:border-primary-500 transition-colors">
+              <div className="flex items-center gap-2 pl-3 pr-2.5">
+                <IndiaFlag />
+                <span className="t-body font-semibold text-neutral-800">+91</span>
+                <span className="text-neutral-300">|</span>
               </div>
               <input
                 inputMode="numeric"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="flex-1 px-4 py-4 t-h3 font-medium text-neutral-800 tabular focus:outline-none"
+                placeholder="Enter Mobile Number"
+                className="flex-1 min-w-0 pr-3 t-body text-neutral-800 tabular focus:outline-none placeholder:text-neutral-400"
               />
             </div>
           </div>
@@ -127,16 +126,46 @@ export default function OTPPage() {
             variant="primary"
             size="lg"
             fullWidth
-            className="mt-8"
+            className="mt-5"
+            disabled={phone.replace(/\D/g, "").length !== 10}
             onClick={() => setStep("otp")}
           >
-            Send OTP →
+            Request Code
           </Button>
 
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={waReminders}
+            onClick={() => setWaReminders((v) => !v)}
+            className="mt-16 w-full flex items-center justify-center gap-2 h-11 rounded-xl border border-dashed border-neutral-300 bg-transparent px-4 transition-colors hover:border-neutral-400"
+          >
+            <span
+              className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                waReminders
+                  ? "bg-[#22C55E]"
+                  : "border-2 border-neutral-300"
+              }`}
+            >
+              {waReminders && (
+                <Check size={10} strokeWidth={3} className="text-white" />
+              )}
+            </span>
+            <span className="t-body-sm text-neutral-700">
+              Get Daily reminders on whatsapp
+            </span>
+          </button>
+
           <p className="t-caption text-neutral-500 leading-relaxed text-center mt-auto pt-8">
-            By continuing, you agree to our{" "}
-            <span className="font-semibold text-primary-600">Terms</span> and{" "}
-            <span className="font-semibold text-primary-600">Conditions</span>
+            By Continuing you agree to our{" "}
+            <span className="font-semibold text-primary-600 underline">
+              Privacy Policy
+            </span>
+            <br />
+            and{" "}
+            <span className="font-semibold text-primary-600 underline">
+              Terms &amp; Conditions
+            </span>
           </p>
         </div>
       </PhoneFrame>
@@ -248,5 +277,22 @@ export default function OTPPage() {
         }
       `}</style>
     </PhoneFrame>
+  );
+}
+
+function IndiaFlag() {
+  return (
+    <svg
+      viewBox="0 0 30 20"
+      width={22}
+      height={15}
+      className="rounded-[2px] shrink-0 shadow-[0_0_0_1px_rgba(0,0,0,0.06)]"
+      aria-hidden
+    >
+      <rect width="30" height="6.67" y="0" fill="#FF9933" />
+      <rect width="30" height="6.66" y="6.67" fill="#FFFFFF" />
+      <rect width="30" height="6.67" y="13.33" fill="#138808" />
+      <circle cx="15" cy="10" r="2" fill="none" stroke="#000080" strokeWidth="0.5" />
+    </svg>
   );
 }

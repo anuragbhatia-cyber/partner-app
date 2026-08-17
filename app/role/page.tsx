@@ -17,80 +17,102 @@ const ROLES: {
 }[] = [
   {
     key: "lawyer",
-    title: "I am a Lawyer",
+    title: "I Am A Lawyer",
     desc: "On-spot legal representation for challans, accidents, and court matters",
     img: "/lawyer-icon.png",
     alt: "Lawyer",
   },
   {
     key: "rto",
-    title: "I am an RTO Agent",
-    desc: "RTO documentation, registration, and challan management services",
+    title: "I Am An RTO Agent",
+    desc: "RTO documentation, registration, and challan management",
     img: "/rto-agent-icon.png",
     alt: "RTO Agent",
   },
 ];
 
 export default function RoleSelectPage() {
-  const [selected, setSelected] = useState<Role | null>(null);
+  const [selected, setSelected] = useState<Role[]>([]);
+
+  const toggle = (r: Role) =>
+    setSelected((prev) =>
+      prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]
+    );
 
   return (
     <PhoneFrame label="Role Selection">
       <AppBar back href="/otp" />
 
-      <div className="flex flex-col min-h-[calc(100%-4rem)] px-4 pt-6 pb-6">
+      <div className="flex flex-col min-h-[calc(100%-4rem)] px-4 pt-4 pb-6">
+        <div className="mb-6">
+          <div className="t-body-sm font-medium text-neutral-500 mb-2">
+            Step 1: Expertise
+          </div>
+          <div className="flex items-center gap-2">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className={`flex-1 h-1.5 rounded-full ${
+                  i === 0 ? "bg-success" : "bg-neutral-200"
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+
         <h1 className="t-h1 font-bold text-neutral-800 tracking-tight">
           What Is Your Area Of Practice?
         </h1>
-        <p className="t-body-lg text-neutral-500 mt-3">
+        <p className="t-body text-neutral-500 mt-2">
           Choose the role that best matches your practice
         </p>
 
-        <div className="space-y-4 mt-10">
+        <div className="space-y-3 mt-6">
           {ROLES.map((r) => {
-            const active = selected === r.key;
+            const active = selected.includes(r.key);
             return (
               <button
                 key={r.key}
                 type="button"
-                onClick={() => setSelected(r.key)}
+                aria-pressed={active}
+                onClick={() => toggle(r.key)}
                 className="w-full text-left"
               >
                 <Card
-                  padding="lg"
-                  className={`transition-all min-h-[172px] ${
+                  padding="md"
+                  className={`transition-all ${
                     active
-                      ? "border-primary-600!"
+                      ? "border-2! border-primary-600!"
                       : "hover:border-primary-300"
                   }`}
                 >
-                  <div className="flex items-start gap-4">
-                    <div className="w-24 h-24 rounded-xl overflow-hidden shrink-0 relative bg-[#e0f2fe]">
+                  <div className="flex items-start gap-3">
+                    <div className="w-28 h-28 rounded-xl overflow-hidden shrink-0 relative bg-[#e0f2fe]">
                       <Image
                         src={r.img}
                         alt={r.alt}
                         fill
-                        sizes="96px"
+                        sizes="112px"
                         className="object-cover object-center"
                       />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="t-h3 font-bold text-neutral-800">
+                    <div className="flex-1 min-w-0 self-center">
+                      <div className="t-body-lg font-bold text-neutral-800">
                         {r.title}
                       </div>
-                      <div className="t-body-sm text-neutral-500 mt-1.5 leading-relaxed">
+                      <div className="t-body-sm text-neutral-500 mt-0.5 leading-snug">
                         {r.desc}
                       </div>
                     </div>
                     <div
-                      className={`w-6 h-6 shrink-0 mt-1 rounded-full flex items-center justify-center transition-all ${
+                      className={`w-7 h-7 shrink-0 rounded-md flex items-center justify-center transition-all ${
                         active
                           ? "bg-primary-600 text-white"
-                          : "border-2 border-neutral-200 bg-white"
+                          : "border-2 border-neutral-300 bg-white"
                       }`}
                       aria-hidden
                     >
-                      {active && <Check size={14} strokeWidth={3} />}
+                      {active && <Check size={16} strokeWidth={3} />}
                     </div>
                   </div>
                 </Card>
@@ -105,8 +127,8 @@ export default function RoleSelectPage() {
           variant="primary"
           size="lg"
           fullWidth
-          href={selected ? "/onboarding" : undefined}
-          disabled={!selected}
+          href={selected.length > 0 ? "/onboarding/personal" : undefined}
+          disabled={selected.length === 0}
         >
           Continue →
         </Button>

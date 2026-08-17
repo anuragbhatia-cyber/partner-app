@@ -21,12 +21,20 @@ interface PhoneFrameProps {
   children: ReactNode;
   label?: string;
   time?: string;
+  /**
+   * Tailwind classes applied to the desktop status-bar band. Defaults to
+   * `bg-white text-neutral-900`. Pages with a colored hero (e.g. the home
+   * screen's teal header) should pass their hero bg + `text-white` so the
+   * status bar visually joins the section below it.
+   */
+  statusBarClassName?: string;
 }
 
 export function PhoneFrame({
   children,
   label,
   time = "9:41",
+  statusBarClassName = "bg-white text-neutral-900",
 }: PhoneFrameProps) {
   const isNested = useContext(PhoneFrameContext);
   if (isNested) return <>{children}</>;
@@ -54,7 +62,12 @@ export function PhoneFrame({
         {/* Screen */}
         <div className="relative bg-[var(--surface-bg)] w-full md:rounded-[34px] md:overflow-hidden md:aspect-[9/19.5] min-h-screen md:min-h-0">
           {/* Status bar — desktop only (mobile OS has its own) */}
-          <div className="hidden md:flex absolute inset-x-0 top-0 z-40 items-center justify-between px-6 pt-2 pb-1 t-body-sm font-semibold text-neutral-900 tabular bg-white">
+          <div
+            className={cn(
+              "hidden md:flex absolute inset-x-0 top-0 z-40 items-center justify-between px-6 pt-2 pb-1 t-body-sm font-semibold tabular",
+              statusBarClassName
+            )}
+          >
             <span>{time}</span>
             <div className="absolute left-1/2 -translate-x-1/2 top-1.5 h-6 w-24 rounded-full bg-neutral-900" />
             <div className="flex items-center gap-1">
@@ -82,15 +95,22 @@ export function PhoneFrame({
 export function PhoneShell({
   children,
   time = "9:41",
+  statusBarClassName = "bg-white text-neutral-900",
 }: {
   children: ReactNode;
   time?: string;
+  statusBarClassName?: string;
 }) {
   return (
     <div className="relative w-full h-full rounded-[42px] bg-neutral-900 p-2 shadow-e3 ring-1 ring-white/5">
       <div className="relative rounded-[34px] overflow-hidden bg-[var(--surface-bg)] w-full h-full flex flex-col">
         {/* Status bar — dedicated row, sits above content */}
-        <div className="relative shrink-0 h-9 flex items-center justify-between px-6 pt-2 pb-1 t-body-sm font-semibold text-neutral-900 tabular z-40 bg-white">
+        <div
+          className={cn(
+            "relative shrink-0 h-9 flex items-center justify-between px-6 pt-2 pb-1 t-body-sm font-semibold tabular z-40",
+            statusBarClassName
+          )}
+        >
           <span>{time}</span>
           <div className="absolute left-1/2 -translate-x-1/2 top-1.5 h-6 w-24 rounded-full bg-neutral-900" />
           <div className="flex items-center gap-1">
@@ -159,6 +179,7 @@ export function AppBar({
   href,
   onClick,
   action,
+  centered,
   className,
 }: {
   title?: string;
@@ -166,10 +187,45 @@ export function AppBar({
   href?: string;
   onClick?: () => void;
   action?: ReactNode;
+  centered?: boolean;
   className?: string;
 }) {
   const backButtonClass =
     "w-10 h-10 flex items-center justify-center rounded-full hover:bg-neutral-50";
+  const backEl = back && (onClick && !href ? (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Back"
+      className={backButtonClass}
+    >
+      <ArrowLeft size={22} className="text-neutral-800" />
+    </button>
+  ) : (
+    <Link href={href || "#"} aria-label="Back" className={backButtonClass}>
+      <ArrowLeft size={22} className="text-neutral-800" />
+    </Link>
+  ));
+
+  if (centered) {
+    return (
+      <header
+        className={cn(
+          "sticky top-0 z-30 min-h-16 px-4 py-3 relative flex items-center bg-white border-b border-[var(--border-subtle)]",
+          className
+        )}
+      >
+        <div className="flex items-center gap-3 min-w-0">{backEl}</div>
+        {title && (
+          <h1 className="absolute left-1/2 -translate-x-1/2 t-h3 text-neutral-800 truncate max-w-[60%] text-center">
+            {title}
+          </h1>
+        )}
+        <div className="ml-auto flex items-center gap-2">{action}</div>
+      </header>
+    );
+  }
+
   return (
     <header
       className={cn(
@@ -178,20 +234,7 @@ export function AppBar({
       )}
     >
       <div className="flex items-center gap-3 min-w-0 flex-1">
-        {back && (onClick && !href ? (
-          <button
-            type="button"
-            onClick={onClick}
-            aria-label="Back"
-            className={backButtonClass}
-          >
-            <ArrowLeft size={22} className="text-neutral-800" />
-          </button>
-        ) : (
-          <Link href={href || "#"} className={backButtonClass}>
-            <ArrowLeft size={22} className="text-neutral-800" />
-          </Link>
-        ))}
+        {backEl}
         {title && (
           <h1 className="t-h3 text-neutral-800 truncate">
             {title}

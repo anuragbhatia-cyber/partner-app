@@ -19,6 +19,7 @@ import {
   Bell,
   User,
   UserPlus,
+  Users,
   X,
   Menu,
   Sparkles,
@@ -31,17 +32,18 @@ import { cn } from "@/lib/utils";
 import SplashPage from "@/app/splash/page";
 import RolePage from "@/app/role/page";
 import OtpPage from "@/app/otp/page";
-import OnboardingWelcomePage from "@/app/onboarding/page";
 import OnboardingPersonalPage from "@/app/onboarding/personal/page";
 import OnboardingDocumentsPage from "@/app/onboarding/documents/page";
-import OnboardingBankPage from "@/app/onboarding/bank/page";
-import OnboardingAgreementPage from "@/app/onboarding/agreement/page";
 import OnboardingKycStatusPage from "@/app/onboarding/kyc-status/page";
 import HomePage from "@/app/home/page";
 import HomeActivePage from "@/app/home/active/page";
 import HomeIncomingPage from "@/app/home/incoming/page";
 import HomeOfflinePage from "@/app/home/offline/page";
 import IncidentsPage from "@/app/incidents/page";
+import LeadsPage from "@/app/leads/page";
+import TeamsPage from "@/app/teams/page";
+import AiExpertPage from "@/app/ai/page";
+import KnowledgeBasePage from "@/app/knowledge/page";
 import IncidentPreDeparturePage from "@/app/incidents/predeparture/page";
 import IncidentEnRoutePage from "@/app/incidents/enroute/page";
 import IncidentActivePage from "@/app/incidents/active/page";
@@ -63,9 +65,13 @@ import ProfileLanguagesPage from "@/app/profile/languages/page";
 
 type ScreenKey =
   | "splash" | "role" | "otp"
-  | "onboarding" | "onboarding-personal" | "onboarding-documents"
-  | "onboarding-bank" | "onboarding-agreement" | "onboarding-kyc-status"
+  | "onboarding-personal" | "onboarding-documents"
+  | "onboarding-kyc-status"
   | "home" | "home-active" | "home-incoming" | "home-offline"
+  | "leads"
+  | "teams"
+  | "ai"
+  | "knowledge"
   | "incidents" | "incidents-predeparture" | "incidents-enroute"
   | "incidents-active" | "incidents-complete" | "incidents-history"
   | "wallet" | "wallet-transactions" | "wallet-payout"
@@ -87,16 +93,17 @@ const SCREENS: ScreenDef[] = [
   { key: "splash", title: "Splash", section: "auth", path: "/splash", Component: SplashPage },
   { key: "otp", title: "Phone & OTP", section: "auth", path: "/otp", Component: OtpPage },
   { key: "role", title: "Role Select", section: "auth", path: "/role", Component: RolePage },
-  { key: "onboarding", title: "Welcome", section: "onboard", path: "/onboarding", Component: OnboardingWelcomePage },
   { key: "onboarding-personal", title: "Personal", section: "onboard", path: "/onboarding/personal", Component: OnboardingPersonalPage },
   { key: "onboarding-documents", title: "Documents", section: "onboard", path: "/onboarding/documents", Component: OnboardingDocumentsPage },
-  { key: "onboarding-bank", title: "Bank", section: "onboard", path: "/onboarding/bank", Component: OnboardingBankPage },
-  { key: "onboarding-agreement", title: "Agreement", section: "onboard", path: "/onboarding/agreement", Component: OnboardingAgreementPage },
   { key: "onboarding-kyc-status", title: "KYC Status", section: "onboard", path: "/onboarding/kyc-status", Component: OnboardingKycStatusPage },
   { key: "home", title: "Home", section: "home", path: "/home", Component: HomePage },
   { key: "home-active", title: "Home · Active", section: "home", path: "/home/active", Component: HomeActivePage },
   { key: "home-incoming", title: "Incoming ⚡", section: "home", path: "/home/incoming", Component: HomeIncomingPage },
   { key: "home-offline", title: "Home · Offline", section: "home", path: "/home/offline", Component: HomeOfflinePage },
+  { key: "leads", title: "Leads", section: "leads", path: "/leads", Component: LeadsPage },
+  { key: "teams", title: "My Team", section: "home", path: "/teams", Component: TeamsPage },
+  { key: "ai", title: "AI Expert", section: "home", path: "/ai", Component: AiExpertPage },
+  { key: "knowledge", title: "Knowledge Base", section: "home", path: "/knowledge", Component: KnowledgeBasePage },
   { key: "incidents", title: "Incidents", section: "incidents", path: "/incidents", Component: IncidentsPage },
   { key: "incidents-predeparture", title: "Pre-departure", section: "incidents", path: "/incidents/predeparture", Component: IncidentPreDeparturePage },
   { key: "incidents-enroute", title: "En Route", section: "incidents", path: "/incidents/enroute", Component: IncidentEnRoutePage },
@@ -122,6 +129,7 @@ const SECTIONS = [
   { key: "auth", title: "Auth", icon: UserPlus },
   { key: "onboard", title: "Onboarding", icon: UserPlus },
   { key: "home", title: "Home", icon: HomeIcon },
+  { key: "leads", title: "Leads", icon: Users },
   { key: "incidents", title: "Incidents", icon: ClipboardList },
   { key: "wallet", title: "Wallet", icon: WalletIcon },
   { key: "notifications", title: "Alerts", icon: Bell },
@@ -355,7 +363,11 @@ export default function PrototypePlayer() {
               key={`desktop-${transitionKey}`}
               className="w-full h-full animate-[fadeIn_260ms_cubic-bezier(0.2,0,0,1)]"
             >
-              <PhoneShell>
+              <PhoneShell
+                statusBarClassName={
+                  current === "splash" ? "bg-black text-white" : undefined
+                }
+              >
                 <CurrentScreen />
               </PhoneShell>
             </div>

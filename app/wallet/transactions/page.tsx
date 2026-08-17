@@ -2,29 +2,41 @@
 
 import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
 import { Card, Chip, SectionLabel } from "@/components/ui";
-import {
-  Search,
-  Filter,
-  ArrowUpRight,
-  ArrowDownRight,
-  ArrowDownLeft,
-} from "lucide-react";
+import { Search, X, ArrowDownLeft } from "lucide-react";
+import { useMemo, useState } from "react";
 
 const TXN = [
   { day: "Aug 3", items: [
-    { type: "earning", title: "IRN-100842", subtitle: "Traffic Challan", amount: "+₹850", status: "pending" },
-    { type: "deduction", title: "TDS on ₹850", amount: "-₹85", status: "" },
+    { type: "payout", title: "HDFC ****4521", subtitle: "UTR: N987654321", amount: "-₹6,500", status: "" },
   ]},
   { day: "Aug 2", items: [
-    { type: "earning", title: "IRN-100838", subtitle: "RTO Renewal", amount: "+₹700", status: "settled" },
-    { type: "payout", title: "HDFC ****4521", subtitle: "UTR: N123456789", amount: "-₹8,000", status: "paid" },
+    { type: "payout", title: "HDFC ****4521", subtitle: "UTR: N123456789", amount: "-₹8,000", status: "" },
   ]},
-  { day: "Aug 1", items: [
-    { type: "deduction", title: "Late arrival penalty", subtitle: "Case IRN-100821", amount: "-₹200", status: "review" },
+  { day: "Jul 28", items: [
+    { type: "payout", title: "HDFC ****4521", subtitle: "UTR: N456789123", amount: "-₹12,400", status: "" },
+  ]},
+  { day: "Jul 21", items: [
+    { type: "payout", title: "HDFC ****4521", subtitle: "UTR: N321654987", amount: "-₹9,750", status: "" },
   ]},
 ];
 
 export default function TransactionsPage() {
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return TXN;
+    return TXN.map((day) => ({
+      ...day,
+      items: day.items.filter((t) =>
+        [t.title, t.subtitle, t.amount, day.day]
+          .filter(Boolean)
+          .some((v) => v!.toLowerCase().includes(q))
+      ),
+    })).filter((day) => day.items.length > 0);
+  }, [query]);
+
   return (
     <PhoneFrame label="Wallet · Transactions">
       <AppBar
@@ -32,77 +44,90 @@ export default function TransactionsPage() {
         href="/wallet"
         title="Transactions"
         action={
-          <div className="flex items-center gap-1">
-            <button className="w-10 h-10 flex items-center justify-center rounded-full">
+          <button
+            type="button"
+            onClick={() => setSearchOpen((s) => !s)}
+            aria-label={searchOpen ? "Close search" : "Search"}
+            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-neutral-50"
+          >
+            {searchOpen ? (
+              <X size={18} className="text-neutral-700" />
+            ) : (
               <Search size={18} className="text-neutral-700" />
-            </button>
-            <button className="w-10 h-10 flex items-center justify-center rounded-full">
-              <Filter size={18} className="text-neutral-700" />
-            </button>
-          </div>
+            )}
+          </button>
         }
       />
 
-      <div className="px-4 py-4 pb-24 space-y-4">
-        <Card padding="lg" className="bg-primary-50/60 border-primary-100">
-          <div className="t-caption font-semibold uppercase tracking-wider text-primary-700 mb-1">
-            Aug 2026
+      {searchOpen && (
+        <div className="px-4 pt-3 bg-white border-b border-[var(--border-subtle)] sticky top-16 z-20">
+          <div className="flex items-center gap-2 h-11 px-3 rounded-lg border border-[var(--border-default)] bg-white focus-within:border-primary-500 transition-colors">
+            <Search size={16} className="text-neutral-600 shrink-0" />
+            <input
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search transactions"
+              className="flex-1 min-w-0 t-body text-neutral-800 bg-transparent focus:outline-none focus-visible:outline-none placeholder:text-neutral-500"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className="shrink-0 text-neutral-500 hover:text-neutral-700"
+                aria-label="Clear search"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
-          <div className="t-h1 font-bold tabular text-neutral-800">
-            ₹28,400 earned
-          </div>
-        </Card>
+          <div className="h-3" />
+        </div>
+      )}
 
-        {TXN.map((day) => (
-          <div key={day.day}>
-            <SectionLabel className="mb-2">{day.day}</SectionLabel>
-            <Card padding="none" className="divide-y divide-[var(--border-subtle)]">
-              {day.items.map((t, i) => (
-                <TxnRow key={i} {...(t as any)} />
-              ))}
-            </Card>
+      <div className="px-4 py-4 pb-24 space-y-4">
+        {filtered.length === 0 ? (
+          <div className="pt-10 text-center t-body text-neutral-500">
+            No transactions match &ldquo;{query}&rdquo;
           </div>
-        ))}
+        ) : (
+          filtered.map((day) => (
+            <div key={day.day}>
+              <SectionLabel className="mb-2">{day.day}</SectionLabel>
+              <Card padding="none" className="divide-y divide-[var(--border-subtle)]">
+                {day.items.map((t, i) => (
+                  <TxnRow key={i} {...(t as any)} />
+                ))}
+              </Card>
+            </div>
+          ))
+        )}
       </div>
     </PhoneFrame>
   );
 }
 
 function TxnRow({
-  type,
   title,
   subtitle,
   amount,
   status,
 }: {
-  type: "earning" | "payout" | "deduction";
+  type?: string;
   title: string;
   subtitle?: string;
   amount: string;
   status?: string;
 }) {
-  const cfg = {
-    earning: { icon: ArrowUpRight, bg: "bg-success-subtle", fg: "text-success-bold" },
-    payout: { icon: ArrowDownLeft, bg: "bg-info-subtle", fg: "text-info-bold" },
-    deduction: { icon: ArrowDownRight, bg: "bg-warning-subtle", fg: "text-warning-bold" },
-  }[type];
-  const Icon = cfg.icon;
-
   const chip =
-    status === "pending" ? (
-      <Chip tone="warning" size="sm" dot>Pending</Chip>
-    ) : status === "settled" ? (
-      <Chip tone="success" size="sm">✓ Settled</Chip>
-    ) : status === "paid" ? (
-      <Chip tone="info" size="sm">✓ Paid</Chip>
-    ) : status === "review" ? (
+    status === "review" ? (
       <Chip tone="warning" size="sm">Under review</Chip>
     ) : null;
 
   return (
     <div className="flex items-start gap-3 px-4 py-3">
-      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${cfg.bg}`}>
-        <Icon size={16} className={cfg.fg} />
+      <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-error-subtle">
+        <ArrowDownLeft size={14} className="text-error-bold" />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
@@ -117,7 +142,7 @@ function TxnRow({
             )}
             {chip && <div className="mt-1.5">{chip}</div>}
           </div>
-          <div className={`t-body font-semibold tabular font-mono shrink-0 ${cfg.fg}`}>
+          <div className="t-body font-semibold tabular font-mono shrink-0 text-error-bold">
             {amount}
           </div>
         </div>

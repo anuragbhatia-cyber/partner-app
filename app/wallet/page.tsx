@@ -1,40 +1,91 @@
 "use client";
 
 import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
-import { BottomTabBar } from "@/components/BottomTabBar";
-import { Button, Card, Chip, SectionLabel } from "@/components/ui";
+import { Button, Card } from "@/components/ui";
+import { CommissionCard } from "@/components/CommissionCard";
 import {
-  Info,
+  HelpCircle,
   ArrowUpRight,
   ArrowDownRight,
   ArrowDownLeft,
-  ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+
+type Range = "7d" | "30d" | "90d";
+
+const RANGE_DATA: Record<
+  Range,
+  { title: string; total: number; bars: { label: string; amount: number }[] }
+> = {
+  "7d": {
+    title: "Last 7 Days",
+    total: 4200,
+    bars: [
+      { label: "Mon", amount: 650 },
+      { label: "Tue", amount: 480 },
+      { label: "Wed", amount: 900 },
+      { label: "Thu", amount: 720 },
+      { label: "Fri", amount: 850 },
+      { label: "Sat", amount: 400 },
+      { label: "Sun", amount: 200 },
+    ],
+  },
+  "30d": {
+    title: "Last 30 Days",
+    total: 17800,
+    bars: [
+      { label: "W1", amount: 3900 },
+      { label: "W2", amount: 4600 },
+      { label: "W3", amount: 5100 },
+      { label: "W4", amount: 4200 },
+    ],
+  },
+  "90d": {
+    title: "Last 90 Days",
+    total: 52400,
+    bars: [
+      { label: "Jun", amount: 16200 },
+      { label: "Jul", amount: 18400 },
+      { label: "Aug", amount: 17800 },
+    ],
+  },
+};
 
 export default function WalletHomePage() {
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [range, setRange] = useState<Range>("7d");
+  const rangeData = RANGE_DATA[range];
+
   return (
     <PhoneFrame label="Wallet · Home">
       <AppBar
         title="Wallet"
+        back
+        href="/home"
+        centered
         action={
-          <button className="w-10 h-10 flex items-center justify-center rounded-full">
-            <Info size={20} className="text-neutral-700" />
+          <button
+            type="button"
+            onClick={() => setHelpOpen(true)}
+            aria-label="How wallet works"
+            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-neutral-50"
+          >
+            <HelpCircle size={20} className="text-neutral-700" />
           </button>
         }
       />
 
-      <div className="px-4 py-4 pb-24 space-y-4">
+      <WalletHelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
+
+      <div className="px-4 py-4 pb-8 space-y-4">
         {/* Balance hero */}
-        <Card padding="lg" className="text-center">
-          <div className="t-caption font-semibold uppercase tracking-wider text-neutral-500 mb-2">
-            Available Balance
+        <Card padding="lg">
+          <div className="t-body font-semibold text-neutral-600 mb-2">
+            Available to withdraw
           </div>
           <div className="t-hero font-bold tabular text-neutral-800 leading-none tracking-tight font-mono">
             ₹4,250
-          </div>
-          <div className="t-body-sm text-neutral-500 mt-2">
-            Ready to withdraw
           </div>
           <Button
             variant="primary"
@@ -47,61 +98,74 @@ export default function WalletHomePage() {
           </Button>
         </Card>
 
-        {/* This month */}
-        <div>
-          <SectionLabel className="mb-2">This Month</SectionLabel>
-          <Card>
-            <div className="space-y-2">
-              <SummaryRow label="Earned" value="₹28,400" />
-              <SummaryRow label="Deductions" value="-₹1,200" muted />
-              <SummaryRow label="Payouts" value="-₹22,950" muted />
-              <div className="pt-2 mt-2 border-t border-[var(--border-subtle)]">
-                <SummaryRow label="Balance" value="₹4,250" bold />
-              </div>
-            </div>
-            <button className="mt-3 pt-3 border-t border-[var(--border-subtle)] w-full flex items-center justify-between t-body-sm font-medium text-primary-600">
-              View full statement
-              <ChevronRight size={14} />
-            </button>
-          </Card>
-        </div>
+        <CommissionCard />
 
-        {/* Recent activity */}
-        <div>
-          <SectionLabel
-            className="mb-2"
-            action={
-              <Link
-                href="/wallet/transactions"
-                className="t-caption font-semibold text-primary-600"
+        {/* Earnings chart with range selector */}
+        <Card padding="lg">
+          <div className="flex items-baseline justify-between mb-5">
+            <span className="t-h3 font-semibold text-neutral-800">
+              {rangeData.title}
+            </span>
+            <span className="t-h2 font-bold tabular font-mono text-neutral-800">
+              ₹{rangeData.total.toLocaleString("en-IN")}
+            </span>
+          </div>
+
+          <div className="flex gap-1.5 mb-6 bg-neutral-100 rounded-lg p-1">
+            {([
+              { value: "7d", label: "7 days" },
+              { value: "30d", label: "30 days" },
+              { value: "90d", label: "90 days" },
+            ] as { value: Range; label: string }[]).map((r) => (
+              <button
+                key={r.value}
+                type="button"
+                onClick={() => setRange(r.value)}
+                className={`flex-1 h-8 rounded-md t-caption font-semibold transition-colors ${
+                  range === r.value
+                    ? "bg-white text-neutral-800 shadow-e1"
+                    : "text-neutral-500 hover:text-neutral-700"
+                }`}
               >
-                View all →
-              </Link>
-            }
-          >
-            Recent Activity
-          </SectionLabel>
-          <Card padding="none" className="divide-y divide-[var(--border-subtle)]">
+                {r.label}
+              </button>
+            ))}
+          </div>
+
+          <EarningsChart bars={rangeData.bars} />
+        </Card>
+
+        {/* Transactions */}
+        <Card padding="none">
+          <div className="flex items-center justify-between px-4 pt-4 pb-3">
+            <span className="t-h3 font-semibold text-neutral-800">
+              Transactions
+            </span>
+            <Link
+              href="/wallet/transactions"
+              className="t-caption font-semibold text-primary-600"
+            >
+              View all →
+            </Link>
+          </div>
+          <div className="divide-y divide-[var(--border-subtle)] border-t border-[var(--border-subtle)]">
             <TxnRow
               type="earning"
               title="Challan IRN-100842"
               date="Aug 3"
               amount="+₹850"
-              status="Pending"
             />
             <TxnRow
               type="payout"
               title="Payout to HDFC ****4521"
               date="Aug 2"
               amount="-₹8,000"
-              status="Paid"
             />
             <TxnRow
               type="earning"
               title="RTO IRN-100838"
               date="Aug 2"
               amount="+₹700"
-              status="Settled"
             />
             <TxnRow
               type="deduction"
@@ -109,49 +173,11 @@ export default function WalletHomePage() {
               date="Aug 1"
               amount="-₹85"
             />
-          </Card>
-        </div>
+          </div>
+        </Card>
       </div>
 
-      <BottomTabBar active="wallet" />
     </PhoneFrame>
-  );
-}
-
-function SummaryRow({
-  label,
-  value,
-  bold,
-  muted,
-}: {
-  label: string;
-  value: string;
-  bold?: boolean;
-  muted?: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between t-body">
-      <span
-        className={
-          bold
-            ? "font-semibold text-neutral-800"
-            : "text-neutral-600"
-        }
-      >
-        {label}
-      </span>
-      <span
-        className={`tabular font-mono ${
-          bold
-            ? "t-h3 font-bold text-neutral-800"
-            : muted
-              ? "text-neutral-500"
-              : "text-neutral-800 font-semibold"
-        }`}
-      >
-        {value}
-      </span>
-    </div>
   );
 }
 
@@ -177,24 +203,24 @@ function TxnRow({
     },
     payout: {
       icon: ArrowDownLeft,
-      bg: "bg-info-subtle",
-      color: "text-info-bold",
-      amountColor: "text-info-bold",
+      bg: "bg-error-subtle",
+      color: "text-error-bold",
+      amountColor: "text-error-bold",
     },
     deduction: {
       icon: ArrowDownRight,
-      bg: "bg-warning-subtle",
-      color: "text-warning-bold",
-      amountColor: "text-warning-bold",
+      bg: "bg-error-subtle",
+      color: "text-error-bold",
+      amountColor: "text-error-bold",
     },
   }[type];
   const Icon = config.icon;
   return (
     <div className="flex items-center gap-3 px-4 py-3">
       <div
-        className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${config.bg}`}
+        className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${config.bg}`}
       >
-        <Icon size={16} className={config.color} />
+        <Icon size={14} className={config.color} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="t-body font-medium text-neutral-800 truncate">
@@ -214,6 +240,95 @@ function TxnRow({
         className={`t-body font-semibold tabular font-mono shrink-0 ${config.amountColor}`}
       >
         {amount}
+      </div>
+    </div>
+  );
+}
+
+function EarningsChart({
+  bars,
+}: {
+  bars: Array<{ label: string; amount: number }>;
+}) {
+  const max = Math.max(...bars.map((d) => d.amount), 1);
+  const lastIdx = bars.length - 1;
+  const compact = (n: number) =>
+    n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : `${n}`;
+  return (
+    <div className="flex gap-3 items-end">
+      {bars.map((d, i) => {
+        const pct = Math.max(Math.round((d.amount / max) * 100), 8);
+        const isLast = i === lastIdx;
+        return (
+          <div key={i} className="flex-1 flex flex-col items-center gap-4 min-w-0">
+            <span
+              className={`t-caption tabular font-mono ${
+                isLast ? "text-success-bold font-semibold" : "text-neutral-500"
+              }`}
+            >
+              ₹{compact(d.amount)}
+            </span>
+            <div className="h-24 w-full flex items-end">
+              <div
+                className={`w-full rounded-md ${
+                  isLast ? "bg-success-bold" : "bg-success"
+                }`}
+                style={{ height: `${pct}%` }}
+                aria-label={`${d.label}: ₹${d.amount}`}
+              />
+            </div>
+            <span
+              className={`t-caption font-semibold ${
+                isLast ? "text-success-bold" : "text-neutral-500"
+              }`}
+            >
+              {d.label}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function WalletHelpModal({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center p-6 ${
+        open ? "" : "pointer-events-none"
+      }`}
+      aria-hidden={!open}
+      role="dialog"
+    >
+      <div
+        onClick={onClose}
+        className={`absolute inset-0 bg-black/40 transition-opacity duration-200 ${
+          open ? "opacity-100" : "opacity-0"
+        }`}
+      />
+      <div
+        className={`relative w-full max-w-sm bg-white rounded-2xl shadow-e3 p-5 transition-all duration-200 ${
+          open ? "opacity-100 scale-100" : "opacity-0 scale-95"
+        }`}
+      >
+        <div className="w-10 h-10 rounded-full bg-primary-50 text-primary-700 flex items-center justify-center mb-3">
+          <HelpCircle size={20} />
+        </div>
+        <h2 className="t-h3 font-bold text-neutral-800">How wallet works</h2>
+        <p className="t-body text-neutral-600 mt-2 leading-relaxed">
+          Every completed case adds to your wallet balance. Deductions like TDS
+          are applied automatically. You can request a payout to your linked
+          bank account anytime — funds usually arrive within 1–2 business days.
+        </p>
+        <Button variant="primary" fullWidth className="mt-5" onClick={onClose}>
+          Okay
+        </Button>
       </div>
     </div>
   );
