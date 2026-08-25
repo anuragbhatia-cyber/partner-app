@@ -11,35 +11,48 @@ import {
   Upload,
   ArrowUp,
   Check,
+  AlertCircle,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { OnboardingStepBar } from "@/app/onboarding/steps";
 
 type DocKey = "aadhaar" | "pan" | "bar" | "selfie";
+type SourceKind = "camera" | "gallery" | "pdf";
 
 type Doc = {
   key: DocKey;
   title: string;
   note?: string;
   done: boolean;
+  filename?: string;
 };
+
+const MAX_MB = 5;
+const MAX_BYTES = MAX_MB * 1024 * 1024;
 
 export default function DocumentsHubPage() {
   const [docs, setDocs] = useState<Doc[]>([
-    { key: "aadhaar", title: "Aadhaar Card", note: "Front + Back", done: true },
-    { key: "pan", title: "PAN Card", done: true },
+    { key: "aadhaar", title: "Aadhaar Card", note: "Front + Back", done: true, filename: "aadhaar.pdf" },
+    { key: "pan", title: "PAN Card", done: true, filename: "pan.jpg" },
     { key: "bar", title: "Bar Council ID", done: false },
     { key: "selfie", title: "Selfie", done: false },
   ]);
   const [active, setActive] = useState<DocKey | null>(null);
+  const [agreementConsent, setAgreementConsent] = useState(false);
+  const [kycConsent, setKycConsent] = useState(false);
+  const [policySheet, setPolicySheet] = useState<PolicyKey | null>(null);
 
   const activeDoc = docs.find((d) => d.key === active) ?? null;
   const uploadedCount = docs.filter((d) => d.done).length;
+  const allDocsUploaded = uploadedCount === docs.length;
+  const canContinue = allDocsUploaded && agreementConsent && kycConsent;
 
-  const markUploaded = () => {
+  const handleUploaded = (filename: string) => {
     if (!active) return;
     setDocs((prev) =>
-      prev.map((d) => (d.key === active ? { ...d, done: true } : d))
+      prev.map((d) =>
+        d.key === active ? { ...d, done: true, filename } : d
+      )
     );
     setActive(null);
   };
@@ -49,7 +62,7 @@ export default function DocumentsHubPage() {
       <AppBar back href="/onboarding/personal" title="Documents" />
 
       <div className="px-4 pt-4 pb-32">
-        <OnboardingStepBar current={3} label="Documents" />
+        <OnboardingStepBar current={4} label="Documents" />
 
         <h1 className="t-h1 font-bold text-neutral-800 tracking-tight mt-6">
           Upload Documents
@@ -65,6 +78,7 @@ export default function DocumentsHubPage() {
               title={d.title}
               note={d.note}
               done={d.done}
+              filename={d.filename}
               onClick={() => setActive(d.key)}
             />
           ))}
@@ -78,8 +92,36 @@ export default function DocumentsHubPage() {
         </Card>
 
         <div className="space-y-3 mt-5">
-          <ConsentRow label="I have read and accept the Partner Agreement" />
-          <ConsentRow label="I consent to KYC verification" />
+          <ConsentRow
+            checked={agreementConsent}
+            onChange={setAgreementConsent}
+          >
+            I have read and accept the{" "}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setPolicySheet("agreement");
+              }}
+              className="font-semibold text-primary-600 underline"
+            >
+              Partner Agreement
+            </button>
+          </ConsentRow>
+          <ConsentRow checked={kycConsent} onChange={setKycConsent}>
+            I consent to{" "}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setPolicySheet("kyc");
+              }}
+              className="font-semibold text-primary-600 underline"
+            >
+              KYC verification
+            </button>{" "}
+            of my documents
+          </ConsentRow>
         </div>
       </div>
 
@@ -88,16 +130,22 @@ export default function DocumentsHubPage() {
           variant="primary"
           size="lg"
           fullWidth
-          href="/onboarding/kyc-status"
+          href={canContinue ? "/onboarding/kyc-status" : undefined}
+          disabled={!canContinue}
         >
-          Continue →
+          Continue
         </Button>
       </div>
 
       <UploadSheet
         doc={activeDoc}
         onClose={() => setActive(null)}
-        onUpload={markUploaded}
+        onUploaded={handleUploaded}
+      />
+
+      <PolicySheet
+        open={policySheet}
+        onClose={() => setPolicySheet(null)}
       />
     </PhoneFrame>
   );
@@ -107,19 +155,17 @@ function DocCard({
   title,
   note,
   done,
+  filename,
   onClick,
 }: {
   title: string;
   note?: string;
   done: boolean;
+  filename?: string;
   onClick: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="w-full text-left"
-    >
+    <button type="button" onClick={onClick} className="w-full text-left">
       <Card padding="md" className="hover:border-primary-300 transition-colors">
         <div className="flex items-center gap-3">
           {done ? (
@@ -151,11 +197,15 @@ function DocCard({
             {note && (
               <div className="t-caption text-neutral-500 mt-0.5">{note}</div>
             )}
-            {!done && (
+            {done && filename ? (
+              <div className="t-caption text-neutral-500 mt-0.5 truncate">
+                {filename} · Tap to replace
+              </div>
+            ) : !done ? (
               <div className="t-caption text-error font-medium mt-0.5">
                 Required
               </div>
-            )}
+            ) : null}
           </div>
           <ChevronRight size={16} className="text-neutral-900 shrink-0" />
         </div>
@@ -164,16 +214,96 @@ function DocCard({
   );
 }
 
+type UploadState =
+  | { kind: "idle" }
+  | { kind: "uploading"; filename: string; sourceLabel: string }
+  | { kind: "error"; filename: string; message: string };
+
 function UploadSheet({
   doc,
   onClose,
-  onUpload,
+  onUploaded,
 }: {
   doc: Doc | null;
   onClose: () => void;
-  onUpload: () => void;
+  onUploaded: (filename: string) => void;
 }) {
   const open = doc !== null;
+  const [state, setState] = useState<UploadState>({ kind: "idle" });
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
+  const pdfRef = useRef<HTMLInputElement>(null);
+
+  const handleClose = () => {
+    if (state.kind === "uploading") return;
+    setState({ kind: "idle" });
+    onClose();
+  };
+
+  const handleFile = (
+    source: SourceKind,
+    input: HTMLInputElement,
+    shiftKey: boolean
+  ) => {
+    const file = input.files?.[0];
+    if (!file) return;
+    const sourceLabel =
+      source === "camera"
+        ? "Camera"
+        : source === "gallery"
+          ? "Gallery"
+          : "PDF";
+
+    const typeError = validateType(source, file);
+    if (typeError) {
+      setState({ kind: "error", filename: file.name, message: typeError });
+      input.value = "";
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      setState({
+        kind: "error",
+        filename: file.name,
+        message: `File is ${(file.size / 1024 / 1024).toFixed(1)} MB. Max ${MAX_MB} MB.`,
+      });
+      input.value = "";
+      return;
+    }
+
+    setState({ kind: "uploading", filename: file.name, sourceLabel });
+    input.value = "";
+
+    window.setTimeout(() => {
+      if (shiftKey) {
+        setState({
+          kind: "error",
+          filename: file.name,
+          message: "Upload failed. Check your connection and retry.",
+        });
+      } else {
+        onUploaded(file.name);
+        setState({ kind: "idle" });
+      }
+    }, 1200);
+  };
+
+  const trigger = (kind: SourceKind) => (e: React.MouseEvent) => {
+    const shift = e.shiftKey;
+    const el =
+      kind === "camera" ? cameraRef.current
+      : kind === "gallery" ? galleryRef.current
+      : pdfRef.current;
+    if (!el) return;
+    // stash shift so the change handler can see it
+    el.dataset.shift = shift ? "1" : "";
+    el.click();
+  };
+
+  const onChange =
+    (kind: SourceKind) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      const shift = e.currentTarget.dataset.shift === "1";
+      handleFile(kind, e.currentTarget, shift);
+    };
 
   return (
     <div
@@ -181,7 +311,7 @@ function UploadSheet({
       aria-hidden={!open}
     >
       <div
-        onClick={onClose}
+        onClick={handleClose}
         className={`absolute inset-0 bg-black/40 transition-opacity duration-200 ${
           open ? "opacity-100" : "opacity-0"
         }`}
@@ -209,52 +339,303 @@ function UploadSheet({
           </div>
           <button
             type="button"
-            onClick={onClose}
-            className="w-9 h-9 -mr-1 shrink-0 rounded-full hover:bg-neutral-50 flex items-center justify-center text-neutral-500"
+            onClick={handleClose}
+            disabled={state.kind === "uploading"}
+            className="w-9 h-9 -mr-1 shrink-0 rounded-full hover:bg-neutral-50 flex items-center justify-center text-neutral-500 disabled:opacity-40"
             aria-label="Close"
           >
             <X size={18} />
           </button>
         </div>
 
-        <div className="px-4 py-3 space-y-2">
-          <UploadAction
-            icon={<Camera size={18} />}
-            title="Take a photo"
-            subtitle="Use your camera"
-            onClick={onUpload}
-          />
-          <UploadAction
-            icon={<ImageIcon size={18} />}
-            title="Choose from gallery"
-            subtitle="Pick an existing image"
-            onClick={onUpload}
-          />
-          <UploadAction
-            icon={<Upload size={18} />}
-            title="Upload PDF"
-            subtitle="Up to 5 MB"
-            onClick={onUpload}
-          />
-        </div>
+        {state.kind === "uploading" && (
+          <div className="mx-4 mt-1 mb-3 rounded-xl border border-primary-200 bg-primary-50/60 px-3 py-3">
+            <div className="flex items-center gap-3">
+              <span className="inline-block w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
+              <div className="min-w-0 flex-1">
+                <p className="t-body-sm font-semibold text-neutral-800 truncate">
+                  Uploading {state.filename}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
-        <div className="px-4 pt-1 pb-5">
-          <Button variant="ghost" fullWidth onClick={onClose}>
+        {state.kind === "error" && (
+          <div
+            role="alert"
+            className="mx-4 mt-1 mb-3 rounded-xl border border-error/30 bg-error-subtle px-3 py-3 flex items-start gap-2.5"
+          >
+            <AlertCircle size={16} className="text-error-bold mt-0.5 shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="t-body-sm font-semibold text-error-bold">
+                Couldn&apos;t upload {state.filename}
+              </p>
+              <p className="t-caption text-neutral-700 mt-0.5">
+                {state.message}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setState({ kind: "idle" })}
+              className="t-body-sm font-semibold text-primary-600 shrink-0"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {state.kind !== "uploading" && (
+          <div className="px-4 py-3 space-y-2">
+            <UploadAction
+              icon={<Camera size={18} />}
+              title="Take a photo"
+              subtitle={`JPG or PNG · up to ${MAX_MB} MB`}
+              onClick={trigger("camera")}
+            />
+            <UploadAction
+              icon={<ImageIcon size={18} />}
+              title="Choose from gallery"
+              subtitle={`JPG or PNG · up to ${MAX_MB} MB`}
+              onClick={trigger("gallery")}
+            />
+            <UploadAction
+              icon={<Upload size={18} />}
+              title="Upload PDF"
+              subtitle={`Up to ${MAX_MB} MB`}
+              onClick={trigger("pdf")}
+            />
+          </div>
+        )}
+
+        <div className="px-4 pt-1 pb-4">
+          <Button
+            variant="ghost"
+            fullWidth
+            onClick={handleClose}
+            disabled={state.kind === "uploading"}
+          >
             Cancel
           </Button>
         </div>
+
+        {/* Hidden real file inputs */}
+        <input
+          ref={cameraRef}
+          type="file"
+          accept="image/*"
+          capture="user"
+          className="hidden"
+          onChange={onChange("camera")}
+        />
+        <input
+          ref={galleryRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={onChange("gallery")}
+        />
+        <input
+          ref={pdfRef}
+          type="file"
+          accept="application/pdf"
+          className="hidden"
+          onChange={onChange("pdf")}
+        />
       </div>
     </div>
   );
 }
 
-function ConsentRow({ label }: { label: string }) {
+function validateType(source: SourceKind, file: File): string | null {
+  if (source === "pdf") {
+    if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) return null;
+    return "Please pick a PDF file.";
+  }
+  if (file.type.startsWith("image/")) return null;
+  return "Please pick an image file (JPG or PNG).";
+}
+
+function ConsentRow({
+  checked,
+  onChange,
+  children,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  children: React.ReactNode;
+}) {
+  const toggle = () => onChange(!checked);
   return (
-    <div className="flex items-center gap-3">
-      <div className="w-5 h-5 rounded-md bg-success flex items-center justify-center shrink-0">
-        <Check size={12} className="text-white" strokeWidth={3} />
+    <div className="w-full flex items-start gap-3">
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={checked}
+        onClick={toggle}
+        aria-label={checked ? "Uncheck consent" : "Check consent"}
+        className={`w-5 h-5 mt-0.5 rounded-md flex items-center justify-center shrink-0 transition-all ${
+          checked
+            ? "bg-primary-600 text-white"
+            : "border-2 border-neutral-300 bg-white"
+        }`}
+      >
+        {checked && <Check size={12} strokeWidth={3} />}
+      </button>
+      <span
+        role="presentation"
+        onClick={toggle}
+        className="t-body text-neutral-800 leading-snug cursor-pointer"
+      >
+        {children}
+      </span>
+    </div>
+  );
+}
+
+type PolicyKey = "agreement" | "kyc";
+
+const POLICY_CONTENT: Record<
+  PolicyKey,
+  { title: string; updated: string; sections: { heading: string; body: string }[] }
+> = {
+  agreement: {
+    title: "Partner Agreement",
+    updated: "Updated 1 Jul 2026",
+    sections: [
+      {
+        heading: "1. Your engagement",
+        body: "You are engaged as an independent professional partner. This is not an employment relationship. You choose when to be available and which cases to accept.",
+      },
+      {
+        heading: "2. Service standards",
+        body: "You agree to respond within stated SLAs, follow the case SOPs from the Knowledge section, and maintain client confidentiality at all times.",
+      },
+      {
+        heading: "3. Compensation",
+        body: "You will be paid the case fee shown at assignment time, less platform fees and statutory deductions (TDS/GST). Payouts settle to your linked bank account per the payout schedule.",
+      },
+      {
+        heading: "4. Conduct",
+        body: "Repeated cancellations, no-shows, or verified complaints may lead to suspension. Impersonation, fraud, or breach of confidentiality will result in immediate removal.",
+      },
+      {
+        heading: "5. Termination",
+        body: "Either party may end the engagement at any time. Pending payouts for completed cases will settle in the normal cycle.",
+      },
+      {
+        heading: "6. Full terms",
+        body: "This is a short summary. The full Partner Agreement is available in Profile · Settings after onboarding.",
+      },
+    ],
+  },
+  kyc: {
+    title: "KYC verification consent",
+    updated: "Updated 1 Jul 2026",
+    sections: [
+      {
+        heading: "What we verify",
+        body: "We verify your identity, professional credentials (Bar Council or equivalent), and bank details against the documents you upload.",
+      },
+      {
+        heading: "How we verify",
+        body: "Your Aadhaar and PAN are validated against Government of India registries (UIDAI, NSDL) through certified KYC service providers. Your Bar Council ID is checked against publicly available registers.",
+      },
+      {
+        heading: "What we share",
+        body: "Only the minimum data required to complete verification is shared with the KYC provider. We do not sell or share this data with third parties.",
+      },
+      {
+        heading: "How long we keep it",
+        body: "Verified KYC records are retained for the duration of your engagement plus seven years, in line with Indian record-keeping requirements.",
+      },
+      {
+        heading: "Your rights",
+        body: "You can request access, correction, or deletion of your data any time by writing to privacy@lawyered.in. Deletion may be limited where retention is legally required.",
+      },
+    ],
+  },
+};
+
+function PolicySheet({
+  open,
+  onClose,
+}: {
+  open: PolicyKey | null;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [open, onClose]);
+
+  if (!open) return null;
+  const doc = POLICY_CONTENT[open];
+
+  return (
+    <div
+      className="absolute inset-0 z-50 flex flex-col"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="policy-sheet-title"
+    >
+      <button
+        type="button"
+        aria-label="Close"
+        onClick={onClose}
+        className="absolute inset-0 bg-black/50 animate-[fadeInBackdrop_180ms_ease-out]"
+      />
+      <div className="mt-auto relative bg-white rounded-t-3xl shadow-e3 max-h-[88%] flex flex-col animate-[sheetIn_260ms_cubic-bezier(0.2,0,0,1)]">
+        <div className="pt-2 pb-1 flex justify-center">
+          <span className="w-10 h-1.5 rounded-full bg-neutral-200" />
+        </div>
+        <div className="px-5 pt-2 pb-3 border-b border-[var(--border-subtle)] flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2
+              id="policy-sheet-title"
+              className="t-h2 font-bold text-neutral-800 tracking-tight"
+            >
+              {doc.title}
+            </h2>
+            <p className="t-caption text-neutral-500 mt-0.5">{doc.updated}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="w-9 h-9 rounded-full flex items-center justify-center text-neutral-500 hover:bg-neutral-100"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          {doc.sections.map((s) => (
+            <section key={s.heading}>
+              <h3 className="t-body-lg font-semibold text-neutral-800">
+                {s.heading}
+              </h3>
+              <p className="t-body-sm text-neutral-600 mt-1 leading-relaxed">
+                {s.body}
+              </p>
+            </section>
+          ))}
+        </div>
       </div>
-      <span className="t-body text-neutral-800">{label}</span>
+
+      <style jsx global>{`
+        @keyframes sheetIn {
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
+        }
+        @keyframes fadeInBackdrop {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }
@@ -268,7 +649,7 @@ function UploadAction({
   icon: React.ReactNode;
   title: string;
   subtitle: string;
-  onClick: () => void;
+  onClick: (e: React.MouseEvent) => void;
 }) {
   return (
     <button

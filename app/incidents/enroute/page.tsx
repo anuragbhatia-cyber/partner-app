@@ -139,7 +139,6 @@ export default function EnRoutePage() {
           size="lg"
           fullWidth
           href="/incidents/active"
-          rightIcon={<ChevronRight size={18} />}
         >
           I&apos;ve Arrived
         </Button>

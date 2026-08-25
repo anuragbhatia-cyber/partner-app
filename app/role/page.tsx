@@ -2,11 +2,15 @@
 
 import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
 import { Button, Card } from "@/components/ui";
+import { OnboardingStepBar } from "@/app/onboarding/steps";
+import {
+  getOnboarding,
+  setOnboarding,
+  type Role,
+} from "@/lib/onboarding-store";
 import { Check } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
-
-type Role = "lawyer" | "rto";
+import { useEffect, useRef, useState } from "react";
 
 const ROLES: {
   key: Role;
@@ -33,31 +37,44 @@ const ROLES: {
 
 export default function RoleSelectPage() {
   const [selected, setSelected] = useState<Role[]>([]);
+  const [saving, setSaving] = useState(false);
+  const nextLinkRef = useRef<HTMLAnchorElement>(null);
+
+  useEffect(() => {
+    const stored = getOnboarding().roles;
+    if (stored && stored.length) setSelected(stored);
+  }, []);
 
   const toggle = (r: Role) =>
     setSelected((prev) =>
       prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]
     );
 
+  const handleContinue = () => {
+    if (saving || selected.length === 0) return;
+    setSaving(true);
+    window.setTimeout(() => {
+      setOnboarding({ roles: selected });
+      nextLinkRef.current?.click();
+    }, 600);
+  };
+
   return (
     <PhoneFrame label="Role Selection">
-      <AppBar back href="/otp" />
+      <a
+        ref={nextLinkRef}
+        href="/onboarding/personal"
+        className="hidden"
+        aria-hidden
+        tabIndex={-1}
+      >
+        Continue
+      </a>
+      <AppBar back href="/account-type" />
 
       <div className="flex flex-col min-h-[calc(100%-4rem)] px-4 pt-4 pb-6">
         <div className="mb-6">
-          <div className="t-body-sm font-medium text-neutral-500 mb-2">
-            Step 1: Expertise
-          </div>
-          <div className="flex items-center gap-2">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className={`flex-1 h-1.5 rounded-full ${
-                  i === 0 ? "bg-success" : "bg-neutral-200"
-                }`}
-              />
-            ))}
-          </div>
+          <OnboardingStepBar current={2} label="Expertise" />
         </div>
 
         <h1 className="t-h1 font-bold text-neutral-800 tracking-tight">
@@ -127,10 +144,11 @@ export default function RoleSelectPage() {
           variant="primary"
           size="lg"
           fullWidth
-          href={selected.length > 0 ? "/onboarding/personal" : undefined}
           disabled={selected.length === 0}
+          loading={saving}
+          onClick={handleContinue}
         >
-          Continue →
+          {saving ? "Saving…" : "Continue"}
         </Button>
       </div>
     </PhoneFrame>

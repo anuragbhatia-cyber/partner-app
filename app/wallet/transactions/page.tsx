@@ -2,10 +2,13 @@
 
 import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
 import { Card, Chip, SectionLabel } from "@/components/ui";
-import { Search, X, ArrowDownLeft } from "lucide-react";
+import { Search, X, ArrowDownLeft, Download, Clock } from "lucide-react";
 import { useMemo, useState } from "react";
 
 const TXN = [
+  { day: "Today", items: [
+    { type: "payout", title: "HDFC ****4521", subtitle: "Requested at 09:42 · PYT-56784321", amount: "-₹2,000", status: "pending" },
+  ]},
   { day: "Aug 3", items: [
     { type: "payout", title: "HDFC ****4521", subtitle: "UTR: N987654321", amount: "-₹6,500", status: "" },
   ]},
@@ -19,6 +22,31 @@ const TXN = [
     { type: "payout", title: "HDFC ****4521", subtitle: "UTR: N321654987", amount: "-₹9,750", status: "" },
   ]},
 ];
+
+function csvEscape(v: string) {
+  const s = String(v ?? "");
+  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function downloadStatement() {
+  const rows = [["Date", "Type", "Title", "Reference", "Amount"]];
+  for (const day of TXN) {
+    for (const t of day.items) {
+      rows.push([day.day, t.type, t.title, t.subtitle, t.amount]);
+    }
+  }
+  const csv = rows.map((r) => r.map(csvEscape).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `wallet-statement-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 export default function TransactionsPage() {
   const [searchOpen, setSearchOpen] = useState(false);
@@ -44,18 +72,29 @@ export default function TransactionsPage() {
         href="/wallet"
         title="Transactions"
         action={
-          <button
-            type="button"
-            onClick={() => setSearchOpen((s) => !s)}
-            aria-label={searchOpen ? "Close search" : "Search"}
-            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-neutral-50"
-          >
-            {searchOpen ? (
-              <X size={18} className="text-neutral-700" />
-            ) : (
-              <Search size={18} className="text-neutral-700" />
-            )}
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={downloadStatement}
+              aria-label="Download statement CSV"
+              title="Download CSV"
+              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-neutral-50"
+            >
+              <Download size={18} className="text-neutral-700" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setSearchOpen((s) => !s)}
+              aria-label={searchOpen ? "Close search" : "Search"}
+              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-neutral-50"
+            >
+              {searchOpen ? (
+                <X size={18} className="text-neutral-700" />
+              ) : (
+                <Search size={18} className="text-neutral-700" />
+              )}
+            </button>
+          </div>
         }
       />
 
@@ -122,12 +161,22 @@ function TxnRow({
   const chip =
     status === "review" ? (
       <Chip tone="warning" size="sm">Under review</Chip>
+    ) : status === "pending" ? (
+      <Chip tone="warning" size="sm" dot>Pending · settles in ~48h</Chip>
     ) : null;
+
+  const isPending = status === "pending" || status === "review";
 
   return (
     <div className="flex items-start gap-3 px-4 py-3">
-      <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-error-subtle">
-        <ArrowDownLeft size={14} className="text-error-bold" />
+      <div
+        className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+          isPending
+            ? "bg-warning-subtle text-warning-bold"
+            : "bg-error-subtle text-error-bold"
+        }`}
+      >
+        {isPending ? <Clock size={14} /> : <ArrowDownLeft size={14} />}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
@@ -142,7 +191,11 @@ function TxnRow({
             )}
             {chip && <div className="mt-1.5">{chip}</div>}
           </div>
-          <div className="t-body font-semibold tabular font-mono shrink-0 text-error-bold">
+          <div
+            className={`t-body font-semibold tabular font-mono shrink-0 ${
+              isPending ? "text-warning-bold" : "text-error-bold"
+            }`}
+          >
             {amount}
           </div>
         </div>

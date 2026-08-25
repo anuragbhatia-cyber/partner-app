@@ -8,6 +8,7 @@ import {
   ChevronRight,
   SlidersHorizontal,
   X,
+  Inbox,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -316,13 +317,8 @@ function FilterSheet({
           <span className="w-10 h-1 rounded-full bg-neutral-200" />
         </div>
 
-        <div className="px-4 pt-2 pb-2 flex items-start justify-between gap-3">
-          <div>
-            <div className="t-h3 font-bold text-neutral-800">Filters</div>
-            <div className="t-caption text-neutral-500 mt-0.5">
-              Narrow incidents by status
-            </div>
-          </div>
+        <div className="px-4 pt-2 pb-2 flex items-center justify-between gap-3">
+          <div className="t-h3 font-bold text-neutral-800">Filters</div>
           <button
             type="button"
             onClick={onClose}
@@ -509,9 +505,44 @@ function ActivePanel({
   });
 
   if (filtered.length === 0) {
+    const noneAtAll = cases.length === 0;
+    const hasQuery = q.length > 0;
+    const hasCategory = category !== "all";
+
+    let title: string;
+    let subtitle: string;
+    if (noneAtAll) {
+      title = "No active cases";
+      subtitle = "You're all caught up. New assignments will land here.";
+    } else if (hasQuery) {
+      title = `No matches for "${query}"`;
+      subtitle = "Try a different case ID, vehicle, or status.";
+    } else if (hasCategory) {
+      title = `No active ${CATEGORY_LABELS[category as LeadCategory]} cases`;
+      subtitle = "Try another category or clear the filter.";
+    } else {
+      title = "No active cases";
+      subtitle = "You're all caught up.";
+    }
+
     return (
-      <div className="text-center py-16 t-body-sm text-neutral-400">
-        No active cases match &ldquo;{query}&rdquo;
+      <div className="rounded-2xl border border-dashed border-[var(--border-default)] bg-white/60 px-5 py-10 text-center">
+        <div className="w-12 h-12 mx-auto rounded-full bg-primary-50 text-primary-700 flex items-center justify-center mb-3">
+          <Inbox size={22} />
+        </div>
+        <h3 className="t-body-lg font-semibold text-neutral-800">{title}</h3>
+        <p className="t-body-sm text-neutral-500 mt-1 max-w-[260px] mx-auto">
+          {subtitle}
+        </p>
+        {noneAtAll && (
+          <Link
+            href="/leads"
+            className="inline-flex items-center gap-1 mt-4 h-9 px-3.5 rounded-full bg-primary-600 text-white t-body-sm font-semibold hover:bg-primary-700"
+          >
+            Browse leads
+            <ChevronRight size={14} />
+          </Link>
+        )}
       </div>
     );
   }
@@ -614,7 +645,7 @@ function PastPanel({
             onClick={onShowAll}
             className="t-body-sm font-semibold text-primary-600"
           >
-            View full history →
+            View full history
           </button>
         </div>
       )}

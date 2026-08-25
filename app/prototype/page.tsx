@@ -26,12 +26,15 @@ import {
 } from "lucide-react";
 import { PhoneShell, PhoneFrameProvider } from "@/components/PhoneFrame";
 import { cn } from "@/lib/utils";
+import { setPreviewLeadId } from "@/lib/leads-store";
 
 /* Import every screen. Nested PhoneFrames in each page become no-op
    because PhoneShell puts them inside PhoneFrameProvider (context flag). */
 import SplashPage from "@/app/splash/page";
 import RolePage from "@/app/role/page";
 import OtpPage from "@/app/otp/page";
+import SessionExpiredPage from "@/app/auth/session-expired/page";
+import AccountTypePage from "@/app/account-type/page";
 import OnboardingPersonalPage from "@/app/onboarding/personal/page";
 import OnboardingDocumentsPage from "@/app/onboarding/documents/page";
 import OnboardingKycStatusPage from "@/app/onboarding/kyc-status/page";
@@ -41,6 +44,7 @@ import HomeIncomingPage from "@/app/home/incoming/page";
 import HomeOfflinePage from "@/app/home/offline/page";
 import IncidentsPage from "@/app/incidents/page";
 import LeadsPage from "@/app/leads/page";
+import LeadDetailPage from "@/app/leads/[id]/page";
 import TeamsPage from "@/app/teams/page";
 import AiExpertPage from "@/app/ai/page";
 import KnowledgeBasePage from "@/app/knowledge/page";
@@ -62,13 +66,15 @@ import ProfilePersonalInfoPage from "@/app/profile/personal-info/page";
 import ProfileProfessionalPage from "@/app/profile/professional/page";
 import ProfileBankPage from "@/app/profile/bank/page";
 import ProfileLanguagesPage from "@/app/profile/languages/page";
+import ProfileSupportChatPage from "@/app/profile/support/chat/page";
+import ProfileSupportFaqPage from "@/app/profile/support/faq/[topic]/page";
 
 type ScreenKey =
-  | "splash" | "role" | "otp"
+  | "splash" | "account-type" | "role" | "otp" | "session-expired"
   | "onboarding-personal" | "onboarding-documents"
   | "onboarding-kyc-status"
   | "home" | "home-active" | "home-incoming" | "home-offline"
-  | "leads"
+  | "leads" | "lead-detail"
   | "teams"
   | "ai"
   | "knowledge"
@@ -77,7 +83,8 @@ type ScreenKey =
   | "wallet" | "wallet-transactions" | "wallet-payout"
   | "notifications"
   | "profile" | "profile-availability" | "profile-documents"
-  | "profile-support" | "profile-settings"
+  | "profile-support" | "profile-support-chat" | "profile-support-faq"
+  | "profile-settings"
   | "profile-personal-info" | "profile-professional"
   | "profile-bank" | "profile-languages";
 
@@ -92,7 +99,9 @@ interface ScreenDef {
 const SCREENS: ScreenDef[] = [
   { key: "splash", title: "Splash", section: "auth", path: "/splash", Component: SplashPage },
   { key: "otp", title: "Phone & OTP", section: "auth", path: "/otp", Component: OtpPage },
+  { key: "account-type", title: "Account Type", section: "auth", path: "/account-type", Component: AccountTypePage },
   { key: "role", title: "Role Select", section: "auth", path: "/role", Component: RolePage },
+  { key: "session-expired", title: "Session Expired", section: "auth", path: "/auth/session-expired", Component: SessionExpiredPage },
   { key: "onboarding-personal", title: "Personal", section: "onboard", path: "/onboarding/personal", Component: OnboardingPersonalPage },
   { key: "onboarding-documents", title: "Documents", section: "onboard", path: "/onboarding/documents", Component: OnboardingDocumentsPage },
   { key: "onboarding-kyc-status", title: "KYC Status", section: "onboard", path: "/onboarding/kyc-status", Component: OnboardingKycStatusPage },
@@ -101,6 +110,7 @@ const SCREENS: ScreenDef[] = [
   { key: "home-incoming", title: "Incoming ⚡", section: "home", path: "/home/incoming", Component: HomeIncomingPage },
   { key: "home-offline", title: "Home · Offline", section: "home", path: "/home/offline", Component: HomeOfflinePage },
   { key: "leads", title: "Leads", section: "leads", path: "/leads", Component: LeadsPage },
+  { key: "lead-detail", title: "Lead Detail", section: "leads", path: "/leads/detail", Component: LeadDetailPage },
   { key: "teams", title: "My Team", section: "home", path: "/teams", Component: TeamsPage },
   { key: "ai", title: "AI Expert", section: "home", path: "/ai", Component: AiExpertPage },
   { key: "knowledge", title: "Knowledge Base", section: "home", path: "/knowledge", Component: KnowledgeBasePage },
@@ -122,6 +132,8 @@ const SCREENS: ScreenDef[] = [
   { key: "profile-languages", title: "Languages", section: "profile", path: "/profile/languages", Component: ProfileLanguagesPage },
   { key: "profile-availability", title: "Availability", section: "profile", path: "/profile/availability", Component: ProfileAvailabilityPage },
   { key: "profile-support", title: "Support", section: "profile", path: "/profile/support", Component: ProfileSupportPage },
+  { key: "profile-support-chat", title: "Support · Chat", section: "profile", path: "/profile/support/chat", Component: ProfileSupportChatPage },
+  { key: "profile-support-faq", title: "Support · Payment FAQ", section: "profile", path: "/profile/support/faq/payment", Component: ProfileSupportFaqPage },
   { key: "profile-settings", title: "Settings", section: "profile", path: "/profile/settings", Component: ProfileSettingsPage },
 ];
 
@@ -199,9 +211,23 @@ export default function PrototypePlayer() {
       if (!link) return;
       const href = link.getAttribute("href");
       if (!href || href.startsWith("http")) return;
+      if (
+        href.startsWith("tel:") ||
+        href.startsWith("mailto:") ||
+        href.startsWith("sms:")
+      ) {
+        return; // let the OS handle these schemes
+      }
       if (href === "/") return; // let gallery link work
       if (href === "#" || href.startsWith("#")) {
         e.preventDefault();
+        return;
+      }
+      const leadMatch = href.match(/^\/leads\/(.+)$/);
+      if (leadMatch) {
+        e.preventDefault();
+        setPreviewLeadId(decodeURIComponent(leadMatch[1]));
+        navigate("lead-detail");
         return;
       }
       const key = pathMap[href];
@@ -343,14 +369,14 @@ export default function PrototypePlayer() {
 
         {/* Desktop: scaled phone device */}
         <div
-          className="hidden md:block relative shrink-0"
+          className="hidden md:block relative shrink-0 overflow-hidden rounded-[42px]"
           style={{
             width: "min(412px, calc(412px * (100dvh - 32px) / 892px))",
             height: "min(892px, 100dvh - 32px)",
           }}
         >
           <div
-            className="absolute top-1/2 left-1/2 overflow-hidden rounded-[42px]"
+            className="absolute top-1/2 left-1/2 rounded-[42px]"
             style={{
               width: "412px",
               height: "892px",

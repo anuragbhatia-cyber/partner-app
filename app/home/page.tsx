@@ -19,24 +19,99 @@ import {
   ShieldCheck,
   Sparkles,
   BookOpen,
+  UserPlus,
+  CalendarCheck2,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PAST_COUNT } from "@/app/incidents/page";
 import {
   CATEGORY_LABELS,
   LeadCategory,
   useLeadsStore,
 } from "@/lib/leads-store";
+import { getStatus, setStatus } from "@/lib/partner-status";
 
-const AREAS = [
-  { id: "blr-south", label: "Bengaluru South", meta: "Koramangala · HSR · BTM" },
-  { id: "blr-central", label: "Bengaluru Central", meta: "MG Road · Shivajinagar" },
-  { id: "blr-north", label: "Bengaluru North", meta: "Hebbal · Yelahanka" },
-  { id: "blr-east", label: "Bengaluru East", meta: "Whitefield · Marathahalli" },
-  { id: "blr-west", label: "Bengaluru West", meta: "Rajajinagar · Vijayanagar" },
-  { id: "electronic-city", label: "Electronic City", meta: "Phase 1 & 2" },
+type Area = { id: string; label: string; meta: string; state: string };
+
+const AREAS: Area[] = [
+  // Karnataka
+  { id: "blr-south", label: "Bengaluru South", meta: "Koramangala · HSR · BTM", state: "Karnataka" },
+  { id: "blr-central", label: "Bengaluru Central", meta: "MG Road · Shivajinagar", state: "Karnataka" },
+  { id: "blr-north", label: "Bengaluru North", meta: "Hebbal · Yelahanka", state: "Karnataka" },
+  { id: "blr-east", label: "Bengaluru East", meta: "Whitefield · Marathahalli", state: "Karnataka" },
+  { id: "blr-west", label: "Bengaluru West", meta: "Rajajinagar · Vijayanagar", state: "Karnataka" },
+  { id: "electronic-city", label: "Electronic City", meta: "Phase 1 & 2", state: "Karnataka" },
+  { id: "mysuru", label: "Mysuru", meta: "Central · Vijayanagar", state: "Karnataka" },
+  { id: "mangaluru", label: "Mangaluru", meta: "Hampankatta · Kadri", state: "Karnataka" },
+  // Maharashtra
+  { id: "mumbai-south", label: "Mumbai South", meta: "Colaba · Fort · Nariman Point", state: "Maharashtra" },
+  { id: "mumbai-central", label: "Mumbai Central", meta: "Bandra · Andheri · Juhu", state: "Maharashtra" },
+  { id: "mumbai-suburbs", label: "Mumbai Suburbs", meta: "Powai · Ghatkopar · Mulund", state: "Maharashtra" },
+  { id: "navi-mumbai", label: "Navi Mumbai", meta: "Vashi · Nerul · Kharghar", state: "Maharashtra" },
+  { id: "thane", label: "Thane", meta: "Ghodbunder · Wagle Estate", state: "Maharashtra" },
+  { id: "pune-central", label: "Pune Central", meta: "Shivajinagar · Deccan", state: "Maharashtra" },
+  { id: "pune-east", label: "Pune East", meta: "Hadapsar · Kharadi · Viman Nagar", state: "Maharashtra" },
+  { id: "pune-west", label: "Pune West", meta: "Kothrud · Baner · Aundh", state: "Maharashtra" },
+  { id: "nagpur", label: "Nagpur", meta: "Civil Lines · Dharampeth", state: "Maharashtra" },
+  // Delhi NCR
+  { id: "delhi-central", label: "Delhi Central", meta: "Connaught Place · Karol Bagh", state: "Delhi" },
+  { id: "delhi-south", label: "South Delhi", meta: "Saket · Hauz Khas · GK", state: "Delhi" },
+  { id: "delhi-north", label: "North Delhi", meta: "Civil Lines · Kamla Nagar", state: "Delhi" },
+  { id: "delhi-east", label: "East Delhi", meta: "Preet Vihar · Laxmi Nagar", state: "Delhi" },
+  { id: "delhi-west", label: "West Delhi", meta: "Rajouri Garden · Janakpuri", state: "Delhi" },
+  { id: "gurugram", label: "Gurugram", meta: "Cyber City · Golf Course Rd", state: "Haryana" },
+  { id: "noida", label: "Noida", meta: "Sector 18 · 62 · 137", state: "Uttar Pradesh" },
+  { id: "faridabad", label: "Faridabad", meta: "Old · Sector 15 · Neelam", state: "Haryana" },
+  { id: "ghaziabad", label: "Ghaziabad", meta: "Indirapuram · Vaishali", state: "Uttar Pradesh" },
+  // Tamil Nadu
+  { id: "chennai-central", label: "Chennai Central", meta: "T Nagar · Nungambakkam", state: "Tamil Nadu" },
+  { id: "chennai-south", label: "Chennai South", meta: "Adyar · Velachery · OMR", state: "Tamil Nadu" },
+  { id: "chennai-north", label: "Chennai North", meta: "Anna Nagar · Kilpauk", state: "Tamil Nadu" },
+  { id: "coimbatore", label: "Coimbatore", meta: "RS Puram · Peelamedu", state: "Tamil Nadu" },
+  { id: "madurai", label: "Madurai", meta: "Anna Nagar · Simmakkal", state: "Tamil Nadu" },
+  // Telangana / AP
+  { id: "hyderabad-central", label: "Hyderabad Central", meta: "Banjara Hills · Jubilee Hills", state: "Telangana" },
+  { id: "hyderabad-west", label: "Hyderabad West", meta: "Gachibowli · Madhapur", state: "Telangana" },
+  { id: "hyderabad-old", label: "Old City", meta: "Charminar · Malakpet", state: "Telangana" },
+  { id: "visakhapatnam", label: "Visakhapatnam", meta: "Dwaraka Nagar · MVP Colony", state: "Andhra Pradesh" },
+  { id: "vijayawada", label: "Vijayawada", meta: "Governorpet · Benz Circle", state: "Andhra Pradesh" },
+  // West Bengal
+  { id: "kolkata-central", label: "Kolkata Central", meta: "Park Street · Esplanade", state: "West Bengal" },
+  { id: "kolkata-south", label: "South Kolkata", meta: "Ballygunge · Gariahat", state: "West Bengal" },
+  { id: "kolkata-north", label: "North Kolkata", meta: "Shyambazar · Sovabazar", state: "West Bengal" },
+  { id: "howrah", label: "Howrah", meta: "Station · Shibpur", state: "West Bengal" },
+  // Gujarat
+  { id: "ahmedabad-west", label: "Ahmedabad West", meta: "SG Highway · Bodakdev", state: "Gujarat" },
+  { id: "ahmedabad-east", label: "Ahmedabad East", meta: "Maninagar · Kankaria", state: "Gujarat" },
+  { id: "surat", label: "Surat", meta: "Adajan · Vesu · Athwa", state: "Gujarat" },
+  { id: "vadodara", label: "Vadodara", meta: "Alkapuri · Manjalpur", state: "Gujarat" },
+  // Rajasthan
+  { id: "jaipur", label: "Jaipur", meta: "C Scheme · Malviya Nagar", state: "Rajasthan" },
+  { id: "jodhpur", label: "Jodhpur", meta: "Sardarpura · Ratanada", state: "Rajasthan" },
+  { id: "udaipur", label: "Udaipur", meta: "Ashok Nagar · Bhopalpura", state: "Rajasthan" },
+  // Kerala
+  { id: "kochi", label: "Kochi", meta: "Kakkanad · Panampilly Nagar", state: "Kerala" },
+  { id: "thiruvananthapuram", label: "Thiruvananthapuram", meta: "Vazhuthacaud · Kowdiar", state: "Kerala" },
+  { id: "kozhikode", label: "Kozhikode", meta: "Beach Rd · Nadakkavu", state: "Kerala" },
+  // Punjab / Chandigarh
+  { id: "chandigarh", label: "Chandigarh", meta: "Sector 17 · 34 · 43", state: "Chandigarh" },
+  { id: "ludhiana", label: "Ludhiana", meta: "Sarabha Nagar · Model Town", state: "Punjab" },
+  { id: "amritsar", label: "Amritsar", meta: "Ranjit Avenue · Lawrence Rd", state: "Punjab" },
+  // UP
+  { id: "lucknow", label: "Lucknow", meta: "Hazratganj · Gomti Nagar", state: "Uttar Pradesh" },
+  { id: "kanpur", label: "Kanpur", meta: "Swaroop Nagar · Kakadeo", state: "Uttar Pradesh" },
+  { id: "varanasi", label: "Varanasi", meta: "Cantt · Sigra · Lanka", state: "Uttar Pradesh" },
+  // MP
+  { id: "indore", label: "Indore", meta: "Vijay Nagar · Palasia", state: "Madhya Pradesh" },
+  { id: "bhopal", label: "Bhopal", meta: "MP Nagar · New Market", state: "Madhya Pradesh" },
+  // Others
+  { id: "patna", label: "Patna", meta: "Boring Rd · Kankarbagh", state: "Bihar" },
+  { id: "bhubaneswar", label: "Bhubaneswar", meta: "Sahid Nagar · Patia", state: "Odisha" },
+  { id: "guwahati", label: "Guwahati", meta: "Panbazar · Beltola", state: "Assam" },
+  { id: "dehradun", label: "Dehradun", meta: "Rajpur Rd · Clement Town", state: "Uttarakhand" },
+  { id: "goa", label: "Goa", meta: "Panaji · Margao · Vasco", state: "Goa" },
 ];
 
 type TodayCase = {
@@ -93,14 +168,28 @@ const TODAY_CASES: TodayCase[] = [
 ];
 
 export default function HomeIdlePage() {
-  const [areaId, setAreaId] = useState("blr-south");
+  const [areaIds, setAreaIds] = useState<string[]>(["blr-south"]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [todayFilter, setTodayFilter] = useState<TodayFilter>("all");
-  const area = AREAS.find((a) => a.id === areaId) ?? AREAS[0];
+  const [ready, setReady] = useState(false);
+  const selectedAreas = AREAS.filter((a) => areaIds.includes(a.id));
+  const primaryArea = selectedAreas[0] ?? AREAS[0];
+  const extraCount = Math.max(0, selectedAreas.length - 1);
   const { leads, assigned } = useLeadsStore();
   const activeCount = assigned.length;
   const leadsCount = leads.length;
+  const offlineLinkRef = useRef<HTMLAnchorElement>(null);
+
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("offline");
+    if (q === "1") setStatus("offline");
+    if (getStatus() === "offline") {
+      offlineLinkRef.current?.click();
+      return;
+    }
+    setReady(true);
+  }, []);
 
   const todayCounts = useMemo(() => {
     const c: Record<TodayFilter, number> = {
@@ -119,6 +208,26 @@ export default function HomeIdlePage() {
     todayFilter === "all"
       ? TODAY_CASES
       : TODAY_CASES.filter((c) => c.category === todayFilter);
+
+  if (!ready) {
+    return (
+      <PhoneFrame
+        label="Home · Idle"
+        statusBarClassName="bg-black text-white"
+      >
+        <a
+          ref={offlineLinkRef}
+          href="/home/offline"
+          className="hidden"
+          aria-hidden
+          tabIndex={-1}
+        >
+          Offline
+        </a>
+        <div className="flex-1" />
+      </PhoneFrame>
+    );
+  }
 
   if (notifOpen) {
     return (
@@ -151,7 +260,8 @@ export default function HomeIdlePage() {
             >
               <MapPin size={13} className="text-white/90 shrink-0" />
               <span className="t-caption font-medium text-white/90 truncate">
-                {area.label}
+                {primaryArea.label}
+                {extraCount > 0 ? ` +${extraCount}` : ""}
               </span>
               <ChevronDown size={13} className="text-white/90 shrink-0" />
             </button>
@@ -229,7 +339,7 @@ export default function HomeIdlePage() {
               <span className="relative inline-flex h-3 w-3 rounded-full bg-success" />
             </span>
             <div className="flex-1 min-w-0 t-body-lg font-semibold text-white">
-              {leadsCount} new lead{leadsCount === 1 ? "" : "s"}
+              {leadsCount} New Lead{leadsCount === 1 ? "" : "s"}
             </div>
             <span className="t-micro font-bold uppercase tracking-wider text-[#4ade80] shrink-0">
               Live
@@ -295,10 +405,10 @@ export default function HomeIdlePage() {
             ))}
           </div>
           {filteredToday.length === 0 ? (
-            <div className="text-center py-10 t-body-sm text-neutral-400">
-              No {todayFilter === "all" ? "" : CATEGORY_LABELS[todayFilter]}{" "}
-              work today.
-            </div>
+            <TodayEmpty
+              filter={todayFilter}
+              onShowAll={() => setTodayFilter("all")}
+            />
           ) : (
             <div className="space-y-3">
               {filteredToday.map((c, i) => (
@@ -313,11 +423,14 @@ export default function HomeIdlePage() {
 
       <LocationPickerSheet
         open={pickerOpen}
-        selectedId={areaId}
-        onSelect={(id) => {
-          setAreaId(id);
-          setPickerOpen(false);
-        }}
+        selectedIds={areaIds}
+        onToggle={(id) =>
+          setAreaIds((prev) =>
+            prev.includes(id)
+              ? prev.filter((x) => x !== id)
+              : [...prev, id]
+          )
+        }
         onClose={() => setPickerOpen(false)}
       />
     </PhoneFrame>
@@ -328,9 +441,11 @@ type NotifItem = {
   icon: React.ComponentType<{ size?: number; className?: string }>;
   iconBg: string;
   title: string;
-  body: string;
+  body: React.ReactNode;
   time: string;
   unread?: boolean;
+  variant?: "invite";
+  href?: string;
 };
 
 const NOTIF_SECTIONS: { label: string; items: NotifItem[] }[] = [
@@ -338,12 +453,30 @@ const NOTIF_SECTIONS: { label: string; items: NotifItem[] }[] = [
     label: "Today",
     items: [
       {
+        icon: UserPlus,
+        iconBg: "bg-primary-50 text-primary-700",
+        title: "Team invite",
+        body: (
+          <>
+            You&apos;ve been requested to join{" "}
+            <span className="font-semibold text-neutral-800">
+              Anurag&apos;s team
+            </span>
+            .
+          </>
+        ),
+        time: "Just now",
+        unread: true,
+        variant: "invite",
+      },
+      {
         icon: IndianRupee,
         iconBg: "bg-accent-100 text-accent-700",
         title: "₹850 credited",
         body: "Case IRN-100842",
         time: "2 min ago",
         unread: true,
+        href: "/wallet/transactions",
       },
       {
         icon: Siren,
@@ -351,6 +484,7 @@ const NOTIF_SECTIONS: { label: string; items: NotifItem[] }[] = [
         title: "New case assigned",
         body: "Traffic Challan · HIGH · MG Road · 3.2 km",
         time: "10:24",
+        href: "/leads",
       },
     ],
   },
@@ -363,6 +497,7 @@ const NOTIF_SECTIONS: { label: string; items: NotifItem[] }[] = [
         title: "₹8,000 paid to bank",
         body: "HDFC ****4521 · UTR: N123456789",
         time: "18:22",
+        href: "/wallet/transactions",
       },
       {
         icon: ShieldCheck,
@@ -370,18 +505,7 @@ const NOTIF_SECTIONS: { label: string; items: NotifItem[] }[] = [
         title: "KYC approved",
         body: "Welcome aboard!",
         time: "09:30",
-      },
-    ],
-  },
-  {
-    label: "This Week",
-    items: [
-      {
-        icon: Sparkles,
-        iconBg: "bg-neutral-100 text-neutral-600",
-        title: "Weekly summary",
-        body: "You earned ₹9,200 across 12 cases",
-        time: "Sun 8:00",
+        href: "/profile/documents",
       },
     ],
   },
@@ -422,8 +546,24 @@ function NotificationsView({ onClose }: { onClose: () => void }) {
 
 function NotifRow({ notif }: { notif: NotifItem }) {
   const Icon = notif.icon;
-  return (
-    <div className="rounded-xl bg-white border border-[var(--border-default)] shadow-e1 p-3.5 flex items-start gap-3">
+  const [inviteState, setInviteState] = useState<
+    "pending" | "accepted" | "declined"
+  >("pending");
+  const [inviteBusy, setInviteBusy] = useState<null | "accept" | "decline">(
+    null
+  );
+
+  const handleInvite = (kind: "accept" | "decline") => {
+    if (inviteBusy) return;
+    setInviteBusy(kind);
+    window.setTimeout(() => {
+      setInviteState(kind === "accept" ? "accepted" : "declined");
+      setInviteBusy(null);
+    }, 500);
+  };
+
+  const inner = (
+    <div className="flex items-start gap-3 p-3.5">
       <div
         className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${notif.iconBg}`}
       >
@@ -440,26 +580,84 @@ function NotifRow({ notif }: { notif: NotifItem }) {
           >
             {notif.title}
           </div>
-          {notif.unread && (
+          {notif.unread && inviteState === "pending" && (
             <span className="w-2 h-2 rounded-full bg-error shrink-0 mt-1.5" />
           )}
         </div>
         <div className="t-body-sm text-neutral-500 mt-0.5">{notif.body}</div>
         <div className="t-caption text-neutral-400 mt-2">{notif.time}</div>
+        {notif.variant === "invite" &&
+          (inviteState === "pending" ? (
+            <div className="mt-3 flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                leftIcon={<X size={14} />}
+                loading={inviteBusy === "decline"}
+                disabled={inviteBusy !== null}
+                onClick={() => handleInvite("decline")}
+              >
+                Decline
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                leftIcon={<Check size={14} />}
+                loading={inviteBusy === "accept"}
+                disabled={inviteBusy !== null}
+                onClick={() => handleInvite("accept")}
+              >
+                Accept
+              </Button>
+            </div>
+          ) : (
+            <div
+              className={`mt-3 inline-flex items-center gap-1.5 t-body-sm font-semibold ${
+                inviteState === "accepted"
+                  ? "text-success-bold"
+                  : "text-neutral-500"
+              }`}
+            >
+              {inviteState === "accepted" ? (
+                <>
+                  <Check size={14} strokeWidth={3} />
+                  Joined the team
+                </>
+              ) : (
+                <>
+                  <X size={14} strokeWidth={3} />
+                  Invite declined
+                </>
+              )}
+            </div>
+          ))}
       </div>
     </div>
   );
+
+  const shell = "rounded-xl bg-white border border-[var(--border-default)] shadow-e1 overflow-hidden";
+  if (notif.href && notif.variant !== "invite") {
+    return (
+      <a
+        href={notif.href}
+        className={`${shell} block hover:bg-neutral-50/50 active:bg-neutral-50 transition-colors`}
+      >
+        {inner}
+      </a>
+    );
+  }
+  return <div className={shell}>{inner}</div>;
 }
 
 function LocationPickerSheet({
   open,
-  selectedId,
-  onSelect,
+  selectedIds,
+  onToggle,
   onClose,
 }: {
   open: boolean;
-  selectedId: string;
-  onSelect: (id: string) => void;
+  selectedIds: string[];
+  onToggle: (id: string) => void;
   onClose: () => void;
 }) {
   const [query, setQuery] = useState("");
@@ -468,9 +666,21 @@ function LocationPickerSheet({
     if (!q) return AREAS;
     return AREAS.filter(
       (a) =>
-        a.label.toLowerCase().includes(q) || a.meta.toLowerCase().includes(q)
+        a.label.toLowerCase().includes(q) ||
+        a.meta.toLowerCase().includes(q) ||
+        a.state.toLowerCase().includes(q)
     );
   }, [query]);
+
+  // Group by state so users can scan by geography
+  const groups = useMemo(() => {
+    const map = new Map<string, Area[]>();
+    for (const a of filtered) {
+      if (!map.has(a.state)) map.set(a.state, []);
+      map.get(a.state)!.push(a);
+    }
+    return Array.from(map.entries());
+  }, [filtered]);
 
   return (
     <div
@@ -485,7 +695,7 @@ function LocationPickerSheet({
       />
 
       <div
-        className={`absolute inset-x-0 bottom-0 bg-white rounded-t-2xl shadow-e3 transition-transform duration-300 ease-out flex flex-col max-h-[80%] ${
+        className={`absolute inset-x-0 bottom-0 bg-white rounded-t-2xl shadow-e3 transition-transform duration-300 ease-out flex flex-col max-h-[85%] ${
           open ? "translate-y-0" : "translate-y-full"
         }`}
       >
@@ -494,12 +704,14 @@ function LocationPickerSheet({
         </div>
 
         <div className="px-4 pt-2 pb-3 flex items-center justify-between gap-3 shrink-0">
-          <div>
+          <div className="min-w-0">
             <div className="t-h3 font-bold text-neutral-800">
-              Working area
+              Working areas
             </div>
             <div className="t-caption text-neutral-700 mt-0.5">
-              You&apos;ll only receive cases from here
+              {selectedIds.length > 0
+                ? `${selectedIds.length} selected · you'll only receive cases from these`
+                : "Pick one or more · you'll only receive cases from these"}
             </div>
           </div>
           <button
@@ -518,9 +730,19 @@ function LocationPickerSheet({
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search area"
+              placeholder="Search area, city or state"
               className="flex-1 t-body text-neutral-800 focus:outline-none placeholder:text-neutral-500"
             />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                aria-label="Clear search"
+                className="w-6 h-6 rounded-full text-neutral-400 hover:text-neutral-600 flex items-center justify-center shrink-0"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -530,51 +752,75 @@ function LocationPickerSheet({
               No areas match &ldquo;{query}&rdquo;
             </div>
           ) : (
-            <ul className="space-y-1">
-              {filtered.map((a) => {
-                const active = a.id === selectedId;
-                return (
-                  <li key={a.id}>
-                    <button
-                      type="button"
-                      onClick={() => onSelect(a.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl border text-left transition-colors ${
-                        active
-                          ? "border-primary-500 bg-primary-50/40"
-                          : "border-transparent hover:bg-neutral-50"
-                      }`}
-                    >
-                      <div
-                        className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                          active
-                            ? "bg-primary-100 text-primary-700"
-                            : "bg-neutral-100 text-neutral-700"
-                        }`}
-                      >
-                        <MapPin size={16} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="t-body font-semibold text-neutral-800 truncate">
-                          {a.label}
-                        </div>
-                        <div className="t-caption text-neutral-700 truncate mt-0.5">
-                          {a.meta}
-                        </div>
-                      </div>
-                      {active && (
-                        <Check size={18} className="text-primary-600 shrink-0" />
-                      )}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+            <div className="space-y-3">
+              {groups.map(([state, items]) => (
+                <div key={state}>
+                  <div className="t-micro font-semibold uppercase tracking-wider text-neutral-500 px-1 mb-1.5">
+                    {state}
+                  </div>
+                  <ul className="space-y-1">
+                    {items.map((a) => {
+                      const active = selectedIds.includes(a.id);
+                      return (
+                        <li key={a.id}>
+                          <button
+                            type="button"
+                            onClick={() => onToggle(a.id)}
+                            className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl border text-left transition-colors ${
+                              active
+                                ? "border-primary-500 bg-primary-50/40"
+                                : "border-transparent hover:bg-neutral-50"
+                            }`}
+                          >
+                            <div
+                              className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                                active
+                                  ? "bg-primary-100 text-primary-700"
+                                  : "bg-neutral-100 text-neutral-700"
+                              }`}
+                            >
+                              <MapPin size={16} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="t-body font-semibold text-neutral-800 truncate">
+                                {a.label}
+                              </div>
+                              <div className="t-caption text-neutral-700 truncate mt-0.5">
+                                {a.meta}
+                              </div>
+                            </div>
+                            <span
+                              className={`w-6 h-6 shrink-0 rounded-md flex items-center justify-center transition-all ${
+                                active
+                                  ? "bg-primary-600 text-white"
+                                  : "border-2 border-neutral-300 bg-white"
+                              }`}
+                              aria-hidden
+                            >
+                              {active && (
+                                <Check size={14} strokeWidth={3} />
+                              )}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
           )}
         </div>
 
         <div className="px-4 pt-2 pb-5 border-t border-[var(--border-subtle)] shrink-0">
-          <Button variant="ghost" fullWidth onClick={onClose}>
-            Cancel
+          <Button
+            variant="primary"
+            fullWidth
+            disabled={selectedIds.length === 0}
+            onClick={onClose}
+          >
+            Done
+            {selectedIds.length > 0 ? ` · ${selectedIds.length} selected` : ""}
           </Button>
         </div>
       </div>
@@ -671,6 +917,51 @@ function FilterPill({
         {count}
       </span>
     </button>
+  );
+}
+
+function TodayEmpty({
+  filter,
+  onShowAll,
+}: {
+  filter: TodayFilter;
+  onShowAll: () => void;
+}) {
+  const isFiltered = filter !== "all";
+  const label = isFiltered ? CATEGORY_LABELS[filter as LeadCategory] : "";
+
+  return (
+    <div className="rounded-2xl border border-dashed border-[var(--border-default)] bg-white/60 px-5 py-8 text-center">
+      <div className="w-12 h-12 mx-auto rounded-full bg-primary-50 text-primary-700 flex items-center justify-center mb-3">
+        <CalendarCheck2 size={22} />
+      </div>
+      <h3 className="t-body-lg font-semibold text-neutral-800">
+        {isFiltered ? `No ${label} work today` : "No cases lined up today"}
+      </h3>
+      <p className="t-body-sm text-neutral-500 mt-1 max-w-[260px] mx-auto">
+        {isFiltered
+          ? "Try another category or browse open leads in your area."
+          : "New cases will land here as they come in. In the meantime, check the live leads."}
+      </p>
+      <div className="mt-4 flex items-center justify-center gap-2">
+        {isFiltered && (
+          <button
+            type="button"
+            onClick={onShowAll}
+            className="h-9 px-3.5 rounded-full border border-[var(--border-default)] text-neutral-700 t-body-sm font-semibold hover:border-primary-300"
+          >
+            Show all
+          </button>
+        )}
+        <Link
+          href="/leads"
+          className="h-9 px-3.5 inline-flex items-center gap-1 rounded-full bg-primary-600 text-white t-body-sm font-semibold hover:bg-primary-700"
+        >
+          Browse leads
+          <ChevronRight size={14} />
+        </Link>
+      </div>
+    </div>
   );
 }
 

@@ -3,6 +3,8 @@
 import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
 import { Button, Card, SectionLabel } from "@/components/ui";
 import { MapPin, ChevronRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { getStatus, setStatus } from "@/lib/partner-status";
 
 const DAYS = [
   { day: "Monday", range: "9:00 - 20:00" },
@@ -15,6 +17,18 @@ const DAYS = [
 ];
 
 export default function AvailabilityPage() {
+  const [online, setOnline] = useState(true);
+
+  useEffect(() => {
+    setOnline(getStatus() === "online");
+  }, []);
+
+  const toggle = () => {
+    const next = !online;
+    setOnline(next);
+    setStatus(next ? "online" : "offline");
+  };
+
   return (
     <PhoneFrame label="Profile · Availability">
       <AppBar back href="/profile" title="Availability & Areas" />
@@ -27,17 +41,23 @@ export default function AvailabilityPage() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-success" />
+                  <span
+                    className={`w-2.5 h-2.5 rounded-full ${
+                      online ? "bg-success" : "bg-neutral-300"
+                    }`}
+                  />
                   <span className="t-h3 font-bold text-neutral-800">
-                    Online
+                    {online ? "Online" : "Offline"}
                   </span>
                 </div>
                 <div className="t-body-sm text-neutral-500 mt-1">
-                  You&apos;re receiving cases
+                  {online
+                    ? "You're receiving cases"
+                    : "You won't receive new cases"}
                 </div>
               </div>
-              <Button variant="secondary" size="sm">
-                Go Offline
+              <Button variant="secondary" size="sm" onClick={toggle}>
+                {online ? "Go Offline" : "Go Online"}
               </Button>
             </div>
           </Card>

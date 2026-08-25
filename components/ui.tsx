@@ -119,6 +119,16 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;
   href?: string;
+  loading?: boolean;
+}
+
+function Spinner() {
+  return (
+    <span
+      aria-hidden
+      className="inline-block w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin"
+    />
+  );
 }
 
 const buttonBase =
@@ -145,6 +155,8 @@ export function Button({
   leftIcon,
   rightIcon,
   href,
+  loading,
+  disabled,
   className,
   children,
   ...props
@@ -157,10 +169,12 @@ export function Button({
     className
   );
 
-  if (href) {
+  const leading = loading ? <Spinner /> : leftIcon;
+
+  if (href && !loading) {
     return (
       <Link href={href} className={classes}>
-        {leftIcon}
+        {leading}
         <span>{children}</span>
         {rightIcon}
       </Link>
@@ -168,8 +182,13 @@ export function Button({
   }
 
   return (
-    <button className={classes} {...props}>
-      {leftIcon}
+    <button
+      className={classes}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
+      {...props}
+    >
+      {leading}
       <span>{children}</span>
       {rightIcon}
     </button>

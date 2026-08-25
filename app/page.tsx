@@ -34,11 +34,13 @@ const sections: Section[] = [
     icon: UserPlus,
     screens: [
       { path: "/splash", title: "Splash", desc: "Brand + auth check" },
-      { path: "/role", title: "Role Selection", desc: "Lawyer or Agent" },
       { path: "/otp", title: "Phone & OTP", desc: "4-digit verify" },
+      { path: "/account-type", title: "Account Type", desc: "Individual or Business" },
+      { path: "/role", title: "Role Selection", desc: "Lawyer or Agent" },
       { path: "/onboarding/personal", title: "Personal Info", desc: "Basic details form" },
       { path: "/onboarding/documents", title: "Documents Hub", desc: "Upload checklist" },
       { path: "/onboarding/kyc-status", title: "KYC Status", desc: "Under review" },
+      { path: "/auth/session-expired", title: "Session Expired", desc: "Signed out for security" },
     ],
   },
   {

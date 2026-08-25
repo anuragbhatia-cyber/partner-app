@@ -20,13 +20,68 @@ import {
   X,
   Pencil,
   BookOpen,
+  Check,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { getStatus, setStatus } from "@/lib/partner-status";
+
+type DayCode = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
+
+const DAYS: { code: DayCode; label: string; short: string }[] = [
+  { code: "mon", label: "Monday", short: "Mon" },
+  { code: "tue", label: "Tuesday", short: "Tue" },
+  { code: "wed", label: "Wednesday", short: "Wed" },
+  { code: "thu", label: "Thursday", short: "Thu" },
+  { code: "fri", label: "Friday", short: "Fri" },
+  { code: "sat", label: "Saturday", short: "Sat" },
+  { code: "sun", label: "Sunday", short: "Sun" },
+];
+
+const WEEKDAYS: DayCode[] = ["mon", "tue", "wed", "thu", "fri"];
+
+function formatDays(codes: DayCode[]): string {
+  const set = new Set(codes);
+  if (set.size === 0) return "No days";
+  if (set.size === 7) return "All week";
+  const wd = WEEKDAYS.every((d) => set.has(d));
+  if (wd && !set.has("sat") && !set.has("sun")) return "Mon–Fri";
+  if (wd && set.has("sat") && !set.has("sun")) return "Mon–Sat";
+  return DAYS.filter((d) => set.has(d.code))
+    .map((d) => d.short)
+    .join(", ");
+}
+
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => i);
+
+function fmtHour(h: number) {
+  if (h === 0) return "12 AM";
+  if (h === 12) return "12 PM";
+  return h < 12 ? `${h} AM` : `${h - 12} PM`;
+}
+
+function fmtShortHour(h: number) {
+  if (h === 0 || h === 24) return "12";
+  return h <= 12 ? `${h}` : `${h - 12}`;
+}
 
 export default function ProfileHomePage() {
   const [online, setOnline] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    setOnline(getStatus() === "online");
+  }, []);
+
+  const toggleOnline = () => {
+    const next = !online;
+    setOnline(next);
+    setStatus(next ? "online" : "offline");
+  };
   const [avatarSheetOpen, setAvatarSheetOpen] = useState(false);
+  const [hoursSheetOpen, setHoursSheetOpen] = useState(false);
+  const [days, setDays] = useState<DayCode[]>(WEEKDAYS);
+  const [startHour, setStartHour] = useState(9);
+  const [endHour, setEndHour] = useState(20);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const onPickFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,7 +180,7 @@ export default function ProfileHomePage() {
                 role="switch"
                 aria-checked={online}
                 aria-label={online ? "Go offline" : "Go online"}
-                onClick={() => setOnline((v) => !v)}
+                onClick={toggleOnline}
                 className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors ${
                   online ? "bg-success" : "bg-neutral-300"
                 }`}
@@ -141,14 +196,19 @@ export default function ProfileHomePage() {
               {online ? "Ready for cases" : "Not receiving new cases"}
             </div>
             <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-[var(--border-subtle)]">
-              <div>
-                <div className="t-caption uppercase tracking-wider text-neutral-500 font-semibold">
+              <button
+                type="button"
+                onClick={() => setHoursSheetOpen(true)}
+                className="text-left rounded-lg -mx-1 px-1 py-0.5 hover:bg-neutral-50 transition-colors"
+              >
+                <div className="t-caption uppercase tracking-wider text-neutral-500 font-semibold flex items-center gap-1">
                   Hours
+                  <Pencil size={10} className="text-neutral-400" />
                 </div>
                 <div className="t-body-sm font-semibold text-neutral-800 mt-1">
-                  Mon–Fri · 9–8
+                  {formatDays(days)} · {fmtShortHour(startHour)}–{fmtShortHour(endHour)}
                 </div>
-              </div>
+              </button>
               <div>
                 <div className="t-caption uppercase tracking-wider text-neutral-500 font-semibold">
                   Area
@@ -203,8 +263,8 @@ export default function ProfileHomePage() {
           <Card padding="none" className="divide-y divide-[var(--border-subtle)]">
             <ListRow
               icon={<BookOpen size={18} />}
-              title="SOP"
-              href="#"
+              title="SOP & Knowledge base"
+              href="/knowledge"
             />
             <ListRow
               icon={<MessageCircle size={18} />}
@@ -234,7 +294,200 @@ export default function ProfileHomePage() {
         onRemove={removeAvatar}
         onClose={() => setAvatarSheetOpen(false)}
       />
+
+      <HoursSheet
+        open={hoursSheetOpen}
+        days={days}
+        startHour={startHour}
+        endHour={endHour}
+        onSave={(d, s, e) => {
+          setDays(d);
+          setStartHour(s);
+          setEndHour(e);
+          setHoursSheetOpen(false);
+        }}
+        onClose={() => setHoursSheetOpen(false)}
+      />
     </PhoneFrame>
+  );
+}
+
+function HoursSheet({
+  open,
+  days,
+  startHour,
+  endHour,
+  onSave,
+  onClose,
+}: {
+  open: boolean;
+  days: DayCode[];
+  startHour: number;
+  endHour: number;
+  onSave: (days: DayCode[], startHour: number, endHour: number) => void;
+  onClose: () => void;
+}) {
+  const [draftDays, setDraftDays] = useState<DayCode[]>(days);
+  const [draftStart, setDraftStart] = useState(startHour);
+  const [draftEnd, setDraftEnd] = useState(endHour);
+
+  const openRef = useRef(open);
+  if (open && !openRef.current) {
+    setDraftDays(days);
+    setDraftStart(startHour);
+    setDraftEnd(endHour);
+  }
+  openRef.current = open;
+
+  const toggleDay = (code: DayCode) =>
+    setDraftDays((prev) =>
+      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
+    );
+  const setPreset = (preset: "weekdays" | "weekend" | "all") => {
+    if (preset === "weekdays") setDraftDays(WEEKDAYS);
+    else if (preset === "weekend") setDraftDays(["sat", "sun"]);
+    else setDraftDays(DAYS.map((d) => d.code));
+  };
+
+  const canSave = draftEnd > draftStart && draftDays.length > 0;
+
+  return (
+    <div
+      className={`fixed inset-0 z-50 ${open ? "" : "pointer-events-none"}`}
+      aria-hidden={!open}
+    >
+      <div
+        onClick={onClose}
+        className={`absolute inset-0 bg-black/40 transition-opacity duration-200 ${
+          open ? "opacity-100" : "opacity-0"
+        }`}
+      />
+
+      <div
+        className={`absolute inset-x-0 bottom-0 bg-white rounded-t-2xl shadow-e3 transition-[translate] duration-300 ease-out flex flex-col ${
+          open ? "translate-y-0" : "translate-y-full"
+        }`}
+      >
+        <div className="pt-2 pb-1 flex justify-center shrink-0">
+          <span className="w-10 h-1 rounded-full bg-neutral-200" />
+        </div>
+
+        <div className="px-4 pt-2 pb-3 flex items-center justify-between gap-3 shrink-0">
+          <div className="t-h3 font-bold text-neutral-800">Working hours</div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-9 h-9 -mr-1 shrink-0 rounded-full hover:bg-neutral-50 flex items-center justify-center text-neutral-500"
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="px-4 pb-3 space-y-4">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="t-caption font-semibold uppercase tracking-wider text-neutral-500">
+                Days
+              </div>
+              <div className="flex items-center gap-1">
+                <PresetChip label="Mon–Fri" onClick={() => setPreset("weekdays")} />
+                <PresetChip label="Weekend" onClick={() => setPreset("weekend")} />
+                <PresetChip label="All" onClick={() => setPreset("all")} />
+              </div>
+            </div>
+            <div className="grid grid-cols-7 gap-1.5">
+              {DAYS.map((d) => {
+                const active = draftDays.includes(d.code);
+                return (
+                  <button
+                    key={d.code}
+                    type="button"
+                    onClick={() => toggleDay(d.code)}
+                    aria-pressed={active}
+                    className={`h-11 rounded-lg border t-body-sm font-semibold inline-flex items-center justify-center transition-colors ${
+                      active
+                        ? "border-primary-500 bg-primary-600 text-white"
+                        : "border-[var(--border-default)] bg-white text-neutral-700 hover:border-primary-300"
+                    }`}
+                  >
+                    {d.short.slice(0, 1)}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-2 t-caption text-neutral-500 tabular">
+              {formatDays(draftDays)}
+            </p>
+          </div>
+
+          <div>
+            <div className="t-caption font-semibold uppercase tracking-wider text-neutral-500 mb-2">
+              Hours
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <div className="t-caption text-neutral-500 mb-1">Start</div>
+                <select
+                  value={draftStart}
+                  onChange={(e) => setDraftStart(Number(e.target.value))}
+                  className="w-full h-11 px-3 rounded-lg border border-[var(--border-default)] bg-white t-body font-medium text-neutral-800 focus:outline-none focus:border-primary-500"
+                >
+                  {HOUR_OPTIONS.map((h) => (
+                    <option key={h} value={h}>
+                      {fmtHour(h)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <div className="t-caption text-neutral-500 mb-1">End</div>
+                <select
+                  value={draftEnd}
+                  onChange={(e) => setDraftEnd(Number(e.target.value))}
+                  className="w-full h-11 px-3 rounded-lg border border-[var(--border-default)] bg-white t-body font-medium text-neutral-800 focus:outline-none focus:border-primary-500"
+                >
+                  {HOUR_OPTIONS.map((h) => (
+                    <option key={h} value={h}>
+                      {fmtHour(h)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            {!canSave && (
+              <div className="t-caption text-error mt-2">
+                End time must be after start time
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="px-4 pt-3 pb-5 border-t border-[var(--border-subtle)] shrink-0">
+          <Button
+            variant="primary"
+            size="lg"
+            fullWidth
+            disabled={!canSave}
+            onClick={() => onSave(draftDays, draftStart, draftEnd)}
+          >
+            Save
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PresetChip({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="h-6 px-2 rounded-full border border-[var(--border-default)] bg-white text-neutral-700 t-caption font-semibold hover:border-primary-300 hover:bg-primary-50/40 transition-colors"
+    >
+      {label}
+    </button>
   );
 }
 

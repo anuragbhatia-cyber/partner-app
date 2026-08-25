@@ -19,17 +19,58 @@ export type Lead = {
   description: string;
 };
 
+export type IncidentStatus =
+  | "ACCEPTED"
+  | "EN ROUTE"
+  | "ARRIVED"
+  | "IN PROGRESS"
+  | "COMPLETED"
+  | "CANCELLED";
+
 export type ActiveIncident = {
   caseId: string;
   vehicle: string;
   description: string;
-  status: "IN PROGRESS" | "EN ROUTE" | "ARRIVED" | "ACCEPTED";
+  status: IncidentStatus;
   deadlineDays: number;
   category?: LeadCategory;
   amount?: number;
   area?: string;
+  /** Millis · when the partner tapped Accept */
   assignedAt?: number;
+  /** Millis · when the partner marked arrived on scene */
+  arrivedAt?: number;
+  /** Millis · when the case was closed successfully */
+  completedAt?: number;
+  /** Millis · when the case was cancelled */
+  cancelledAt?: number;
 };
+
+/** Deadline in ms, derived from assignedAt + deadlineDays. */
+export function incidentDeadlineAt(inc: ActiveIncident): number | null {
+  if (!inc.assignedAt) return null;
+  return inc.assignedAt + inc.deadlineDays * 24 * 60 * 60 * 1000;
+}
+
+/** True when the case is past its SLA deadline and not yet closed. */
+export function isSlaBreached(
+  inc: ActiveIncident,
+  now: number = Date.now()
+): boolean {
+  if (inc.status === "COMPLETED" || inc.status === "CANCELLED") return false;
+  const dl = incidentDeadlineAt(inc);
+  return dl !== null && now > dl;
+}
+
+/** Ms elapsed since the partner accepted (0 if not accepted yet). */
+export function incidentElapsedMs(
+  inc: ActiveIncident,
+  now: number = Date.now()
+): number {
+  if (!inc.assignedAt) return 0;
+  const end = inc.completedAt ?? inc.cancelledAt ?? now;
+  return Math.max(0, end - inc.assignedAt);
+}
 
 type State = {
   leads: Lead[];
@@ -184,6 +225,25 @@ const getServerSnapshot = () => state;
 
 let irnCounter = 100846;
 const nextIrn = () => `IRN-${irnCounter++}`;
+
+let previewLeadId: string | null = null;
+const previewListeners = new Set<() => void>();
+const previewSubscribe = (fn: () => void) => {
+  previewListeners.add(fn);
+  return () => {
+    previewListeners.delete(fn);
+  };
+};
+const previewGet = () => previewLeadId;
+
+export function setPreviewLeadId(id: string | null) {
+  previewLeadId = id;
+  previewListeners.forEach((fn) => fn());
+}
+
+export function usePreviewLeadId(): string | null {
+  return useSyncExternalStore(previewSubscribe, previewGet, previewGet);
+}
 
 export function useLeadsStore(): State {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);

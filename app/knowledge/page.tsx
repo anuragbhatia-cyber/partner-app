@@ -13,8 +13,10 @@ import {
   Calendar,
   SlidersHorizontal,
   X,
+  Download,
+  Check,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Category =
   | "template"
@@ -202,9 +204,20 @@ const FILTERS: Filter[] = [
   "circular",
 ];
 
+type SortMode = "recent" | "oldest" | "az";
+
+const SORT_LABEL: Record<SortMode, string> = {
+  recent: "Newest first",
+  oldest: "Oldest first",
+  az: "A → Z",
+};
+
 export default function KnowledgeBasePage() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
+  const [active, setActive] = useState<Resource | null>(null);
+  const [sort, setSort] = useState<SortMode>("recent");
+  const [sortSheetOpen, setSortSheetOpen] = useState(false);
 
   const counts = useMemo(() => {
     const c: Record<Filter, number> = {
@@ -225,7 +238,7 @@ export default function KnowledgeBasePage() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return RESOURCES.filter((r) => {
+    const matched = RESOURCES.filter((r) => {
       if (filter !== "all" && r.category !== filter) return false;
       if (!q) return true;
       return (
@@ -233,7 +246,16 @@ export default function KnowledgeBasePage() {
         r.description.toLowerCase().includes(q)
       );
     });
-  }, [query, filter]);
+    const sorted = [...matched];
+    if (sort === "recent") {
+      sorted.sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
+    } else if (sort === "oldest") {
+      sorted.sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
+    } else {
+      sorted.sort((a, b) => a.title.localeCompare(b.title));
+    }
+    return sorted;
+  }, [query, filter, sort]);
 
   return (
     <PhoneFrame label="Knowledge Base">
@@ -260,8 +282,14 @@ export default function KnowledgeBasePage() {
           )}
           <button
             type="button"
-            aria-label="Filters"
-            className="w-8 h-8 -mr-1 rounded-lg text-neutral-500 hover:text-primary-600 hover:bg-primary-50/50 flex items-center justify-center shrink-0"
+            onClick={() => setSortSheetOpen(true)}
+            aria-label={`Sort: ${SORT_LABEL[sort]}`}
+            title={`Sort: ${SORT_LABEL[sort]}`}
+            className={`w-8 h-8 -mr-1 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+              sort !== "recent"
+                ? "bg-primary-50 text-primary-700"
+                : "text-neutral-500 hover:text-primary-600 hover:bg-primary-50/50"
+            }`}
           >
             <SlidersHorizontal size={16} />
           </button>
@@ -288,10 +316,113 @@ export default function KnowledgeBasePage() {
             No resources match your search.
           </div>
         ) : (
-          filtered.map((r) => <ResourceCard key={r.id} resource={r} />)
+          filtered.map((r) => (
+            <ResourceCard
+              key={r.id}
+              resource={r}
+              onOpen={() => setActive(r)}
+            />
+          ))
         )}
       </div>
+
+      <ResourceSheet resource={active} onClose={() => setActive(null)} />
+
+      <SortSheet
+        open={sortSheetOpen}
+        value={sort}
+        onChange={setSort}
+        onClose={() => setSortSheetOpen(false)}
+      />
     </PhoneFrame>
+  );
+}
+
+function SortSheet({
+  open,
+  value,
+  onChange,
+  onClose,
+}: {
+  open: boolean;
+  value: SortMode;
+  onChange: (v: SortMode) => void;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  const options: SortMode[] = ["recent", "oldest", "az"];
+
+  return (
+    <div
+      className="absolute inset-0 z-50 flex flex-col"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="sort-title"
+    >
+      <button
+        type="button"
+        aria-label="Close"
+        onClick={onClose}
+        className="absolute inset-0 bg-black/50 animate-[fadeInBackdrop_180ms_ease-out]"
+      />
+      <div className="mt-auto relative bg-white rounded-t-3xl shadow-e3 flex flex-col animate-[sheetIn_260ms_cubic-bezier(0.2,0,0,1)]">
+        <div className="pt-2 pb-1 flex justify-center">
+          <span className="w-10 h-1.5 rounded-full bg-neutral-200" />
+        </div>
+        <div className="px-5 pt-2 pb-3 flex items-start justify-between gap-3">
+          <h2
+            id="sort-title"
+            className="t-h3 font-bold text-neutral-800"
+          >
+            Sort by
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="w-9 h-9 -mr-1 rounded-full flex items-center justify-center text-neutral-500 hover:bg-neutral-100"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="px-4 pb-5 space-y-1">
+          {options.map((opt) => {
+            const active = value === opt;
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => {
+                  onChange(opt);
+                  onClose();
+                }}
+                className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-colors ${
+                  active
+                    ? "bg-primary-50 text-primary-700"
+                    : "hover:bg-neutral-50 text-neutral-800"
+                }`}
+              >
+                <span className="t-body font-semibold">
+                  {SORT_LABEL[opt]}
+                </span>
+                {active && <Check size={18} strokeWidth={3} />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -330,12 +461,19 @@ function FilterPill({
   );
 }
 
-function ResourceCard({ resource }: { resource: Resource }) {
+function ResourceCard({
+  resource,
+  onOpen,
+}: {
+  resource: Resource;
+  onOpen: () => void;
+}) {
   const meta = CATEGORY_META[resource.category];
   const Icon = meta.icon;
   return (
     <button
       type="button"
+      onClick={onOpen}
       className="w-full text-left rounded-xl bg-white border border-[var(--border-default)] shadow-e1 p-4 hover:border-primary-300 hover:shadow-e2 transition-all"
     >
       <div
@@ -357,5 +495,252 @@ function ResourceCard({ resource }: { resource: Resource }) {
         {resource.date}
       </div>
     </button>
+  );
+}
+
+function generateBody(resource: Resource): { heading: string; body: string }[] {
+  const cat = resource.category;
+  if (cat === "template") {
+    return [
+      {
+        heading: "How to use",
+        body: "Print on the specified stamp paper (or use e-stamp) and fill each highlighted section with case-specific details. Have the client sign in front of a notary before submission.",
+      },
+      {
+        heading: "Fields to complete",
+        body: "Deponent details, case reference, event narration, prayer clause, and jurat block. Do not leave any field blank — strike through with 'NA' if not applicable.",
+      },
+      {
+        heading: "Common mistakes",
+        body: "Missing stamp value, unsigned pages, inconsistent dates between annexures. Cross-check against the master checklist before filing.",
+      },
+    ];
+  }
+  if (cat === "faq") {
+    return [
+      {
+        heading: "Frequently asked",
+        body: "This page collates the questions clients ask most often. Each answer includes the statutory basis and the practical next step you can take on their behalf.",
+      },
+      {
+        heading: "When to escalate",
+        body: "If the question needs interpretation of a recent judgement or state-specific rule, forward it to the ops desk via Support — don't guess.",
+      },
+      {
+        heading: "Related resources",
+        body: "See Guides for step-by-step handling and Regulations for the underlying statute text.",
+      },
+    ];
+  }
+  if (cat === "guide") {
+    return [
+      {
+        heading: "Before you start",
+        body: "Confirm the client has all originals plus one clear self-attested copy of each document. Missing paperwork is the #1 reason for delays.",
+      },
+      {
+        heading: "Step-by-step",
+        body: "Follow the sequence below in order. Skipping a step can invalidate the whole submission. Each step has an SLA — flag delays to ops immediately.",
+      },
+      {
+        heading: "Timelines & fees",
+        body: "Typical turnaround is 3–7 working days depending on the RTO. Government fees are listed at the bottom; convenience charges are set by the platform.",
+      },
+    ];
+  }
+  if (cat === "checklist") {
+    return [
+      {
+        heading: "Before the visit",
+        body: "Print two copies of the checklist and have the client initial each row as items are handed over. Keep the original with your file.",
+      },
+      {
+        heading: "At the counter",
+        body: "Present documents in the order listed. Officer-side questions tend to follow the same sequence — you'll move faster.",
+      },
+      {
+        heading: "After submission",
+        body: "Save the acknowledgment slip, log the reference number, and set a follow-up reminder inside the app.",
+      },
+    ];
+  }
+  if (cat === "regulation") {
+    return [
+      {
+        heading: "Scope",
+        body: "This section reproduces the operative text with plain-language callouts. Refer to the official gazette for the authoritative version.",
+      },
+      {
+        heading: "Recent amendments",
+        body: "Amendments effective in the last 12 months are marked in the sidebar. Read those before quoting older text in court.",
+      },
+      {
+        heading: "Related case law",
+        body: "See the Judgements section for cases where this provision was tested or read down.",
+      },
+    ];
+  }
+  if (cat === "judgement") {
+    return [
+      {
+        heading: "Case brief",
+        body: "Short summary of facts, the question of law, and the operative directions. Use this as your starting point before citing.",
+      },
+      {
+        heading: "Ratio decidendi",
+        body: "The binding principle of the case, distilled into 2–3 lines. Cite this — not the facts — when relying on the judgement.",
+      },
+      {
+        heading: "Applicability",
+        body: "Guidance on which similar fact patterns this ruling helps with and where it may be distinguished.",
+      },
+    ];
+  }
+  return [
+    {
+      heading: "Notice",
+      body: "This is the operative text of the circular. Follow the compliance dates listed at the end.",
+    },
+    {
+      heading: "Impact",
+      body: "Practical impact on partners handling related cases. Update your workflow if this applies to your area.",
+    },
+    {
+      heading: "Effective date",
+      body: "Applies from the notification date noted on the header. Cases filed before this date follow the earlier procedure.",
+    },
+  ];
+}
+
+function downloadResource(r: Resource) {
+  const sections = generateBody(r);
+  const lines = [
+    r.title,
+    "",
+    `Category: ${CATEGORY_META[r.category].label}`,
+    `Updated: ${r.date}`,
+    "",
+    r.description,
+    "",
+  ];
+  for (const s of sections) {
+    lines.push(s.heading, s.body, "");
+  }
+  const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${r.id}-${r.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40)}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function ResourceSheet({
+  resource,
+  onClose,
+}: {
+  resource: Resource | null;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    if (!resource) return;
+    const h = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [resource, onClose]);
+
+  if (!resource) return null;
+  const meta = CATEGORY_META[resource.category];
+  const Icon = meta.icon;
+  const sections = generateBody(resource);
+
+  return (
+    <div
+      className="absolute inset-0 z-50 flex flex-col"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="resource-title"
+    >
+      <button
+        type="button"
+        aria-label="Close"
+        onClick={onClose}
+        className="absolute inset-0 bg-black/50 animate-[fadeInBackdrop_180ms_ease-out]"
+      />
+      <div className="mt-auto relative bg-white rounded-t-3xl shadow-e3 max-h-[92%] flex flex-col animate-[sheetIn_260ms_cubic-bezier(0.2,0,0,1)]">
+        <div className="pt-2 pb-1 flex justify-center">
+          <span className="w-10 h-1.5 rounded-full bg-neutral-200" />
+        </div>
+        <div className="px-5 pt-2 pb-3 border-b border-[var(--border-subtle)] flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className={`inline-flex items-center gap-1.5 px-2 h-6 rounded-full mb-2 ${meta.tone}`}>
+              <Icon size={12} />
+              <span className="t-micro font-bold uppercase tracking-wider">
+                {meta.label}
+              </span>
+            </div>
+            <h2
+              id="resource-title"
+              className="t-h2 font-bold text-neutral-800 tracking-tight leading-snug"
+            >
+              {resource.title}
+            </h2>
+            <p className="t-caption text-neutral-500 mt-1">
+              Updated {resource.date}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="w-9 h-9 rounded-full flex items-center justify-center text-neutral-500 hover:bg-neutral-100 shrink-0"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          <p className="t-body text-neutral-700 leading-relaxed">
+            {resource.description}
+          </p>
+          {sections.map((s) => (
+            <section key={s.heading}>
+              <h3 className="t-body-lg font-semibold text-neutral-800">
+                {s.heading}
+              </h3>
+              <p className="t-body-sm text-neutral-600 mt-1 leading-relaxed">
+                {s.body}
+              </p>
+            </section>
+          ))}
+        </div>
+
+        <div className="px-5 pt-3 pb-5 border-t border-[var(--border-subtle)]">
+          <button
+            type="button"
+            onClick={() => downloadResource(resource)}
+            className="w-full inline-flex items-center justify-center gap-2 h-11 rounded-xl bg-primary-600 text-white t-body font-semibold hover:bg-primary-700"
+          >
+            <Download size={16} />
+            Download as text
+          </button>
+        </div>
+      </div>
+
+      <style jsx global>{`
+        @keyframes sheetIn {
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
+        }
+        @keyframes fadeInBackdrop {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+      `}</style>
+    </div>
   );
 }

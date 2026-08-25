@@ -13,6 +13,7 @@ import {
   RefreshCw,
   Check,
   RotateCcw,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -84,7 +85,16 @@ export default function AiExpertPage() {
   const [draft, setDraft] = useState("");
   const [typing, setTyping] = useState(false);
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [attachment, setAttachment] = useState<{ name: string; size: number } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAttachPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f) return;
+    setAttachment({ name: f.name, size: f.size });
+  };
 
   const hasChat = messages.length > 0;
 
@@ -96,28 +106,56 @@ export default function AiExpertPage() {
     });
   }, [messages, typing]);
 
+  const streamReply = (reply: string) => {
+    const aiId = Date.now() + 1;
+    // Small "thinking" pause so the typing dots register, then insert an empty
+    // AI message and stream tokens into it.
+    window.setTimeout(() => {
+      setMessages((prev) => [
+        ...prev,
+        { id: aiId, from: "ai", text: "", time: now() },
+      ]);
+      setTyping(false);
+      const tokens = reply.split(/(\s+)/); // preserve spaces
+      let i = 0;
+      const step = () => {
+        if (i >= tokens.length) return;
+        const chunk = tokens[i++];
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === aiId ? { ...m, text: m.text + chunk } : m
+          )
+        );
+        window.setTimeout(step, 25 + Math.random() * 45);
+      };
+      step();
+    }, 450);
+  };
+
   const send = (text: string, cannedReply?: string) => {
     const trimmed = text.trim();
-    if (!trimmed) return;
+    if (!trimmed && !attachment) return;
+    const attachLine = attachment ? `📎 ${attachment.name}` : "";
+    const finalText =
+      attachLine && trimmed
+        ? `${attachLine}\n\n${trimmed}`
+        : attachLine || trimmed;
     const userMsg: Msg = {
       id: Date.now(),
       from: "user",
-      text: trimmed,
+      text: finalText,
       time: now(),
     };
     setMessages((prev) => [...prev, userMsg]);
     setDraft("");
+    setAttachment(null);
     setTyping(true);
-    window.setTimeout(() => {
-      const reply =
-        cannedReply ??
-        FALLBACK_REPLIES[Math.floor(Math.random() * FALLBACK_REPLIES.length)];
-      setMessages((prev) => [
-        ...prev,
-        { id: Date.now() + 1, from: "ai", text: reply, time: now() },
-      ]);
-      setTyping(false);
-    }, 1200);
+    const reply =
+      cannedReply ??
+      (attachment
+        ? `Got the file — ${attachment.name}. I'll pull out the key points and reply below.`
+        : FALLBACK_REPLIES[Math.floor(Math.random() * FALLBACK_REPLIES.length)]);
+    streamReply(reply);
   };
 
   const usePrompt = (p: Prompt) => send(p.seedUser, p.reply);
@@ -143,23 +181,19 @@ export default function AiExpertPage() {
       return prev.slice(0, idx);
     });
     setTyping(true);
-    window.setTimeout(() => {
-      setMessages((prev) => {
-        const lastUser = [...prev].reverse().find((m) => m.from === "user");
-        const seed = lastUser?.text ?? "";
-        // Prefer a prompt-specific reply if the user seed matches a prompt
-        const prompt = PROMPTS.find((p) => p.seedUser === seed);
-        const pool = prompt
-          ? [prompt.reply, ...FALLBACK_REPLIES]
-          : FALLBACK_REPLIES;
-        const reply = pool[Math.floor(Math.random() * pool.length)];
-        return [
-          ...prev,
-          { id: Date.now(), from: "ai", text: reply, time: now() },
-        ];
-      });
-      setTyping(false);
-    }, 900);
+    // Pick the reply now, off the current state snapshot, then stream it in.
+    setMessages((prev) => {
+      const lastUser = [...prev].reverse().find((m) => m.from === "user");
+      const seed = lastUser?.text ?? "";
+      const prompt = PROMPTS.find((p) => p.seedUser === seed);
+      const pool = prompt
+        ? [prompt.reply, ...FALLBACK_REPLIES]
+        : FALLBACK_REPLIES;
+      const reply = pool[Math.floor(Math.random() * pool.length)];
+      // Schedule the streaming outside of the setter to avoid double-run.
+      window.setTimeout(() => streamReply(reply), 0);
+      return prev;
+    });
   };
 
   const reset = () => {
@@ -209,9 +243,39 @@ export default function AiExpertPage() {
       )}
 
       <div className="sticky bottom-0 z-20 mt-auto bg-white border-t border-[var(--border-subtle)] px-3 py-2">
+        {attachment && (
+          <div className="mb-2 mx-1 inline-flex items-center gap-2 max-w-full pl-2.5 pr-1 py-1 rounded-full bg-primary-50 border border-primary-100">
+            <Paperclip
+              size={12}
+              className="text-primary-700 shrink-0"
+            />
+            <span className="t-body-sm text-primary-800 truncate">
+              {attachment.name}
+            </span>
+            <span className="t-caption text-neutral-500 shrink-0">
+              {(attachment.size / 1024).toFixed(0)} KB
+            </span>
+            <button
+              type="button"
+              onClick={() => setAttachment(null)}
+              aria-label="Remove attachment"
+              className="w-6 h-6 rounded-full hover:bg-primary-100 text-primary-700 flex items-center justify-center shrink-0"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        )}
         <div className="flex items-end gap-2 min-h-11 px-2 pl-3 py-1.5 rounded-2xl border border-[var(--border-default)] bg-white focus-within:border-primary-500 transition-colors">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,application/pdf"
+            className="hidden"
+            onChange={handleAttachPick}
+          />
           <button
             type="button"
+            onClick={() => fileInputRef.current?.click()}
             aria-label="Attach a document"
             className="w-8 h-8 shrink-0 rounded-full text-neutral-500 hover:text-primary-600 hover:bg-primary-50/50 flex items-center justify-center"
           >
@@ -226,14 +290,14 @@ export default function AiExpertPage() {
                 send(draft);
               }
             }}
-            placeholder="Ask anything…"
+            placeholder={attachment ? "Add a note (optional)…" : "Ask anything…"}
             rows={1}
             className="flex-1 min-w-0 t-body text-neutral-800 bg-transparent focus:outline-none placeholder:text-neutral-400 resize-none py-2 max-h-32"
           />
           <button
             type="button"
             onClick={() => send(draft)}
-            disabled={!draft.trim()}
+            disabled={!draft.trim() && !attachment}
             className="w-9 h-9 rounded-full bg-primary-600 text-white flex items-center justify-center disabled:opacity-40 shrink-0"
             aria-label="Send"
           >

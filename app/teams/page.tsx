@@ -11,12 +11,15 @@ import {
   X,
   Mail,
   Phone,
-  Check,
   Briefcase,
   Calendar,
+  AlertTriangle,
+  Trash2,
+  Send,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useToast } from "@/components/Toast";
 
 type MemberStatus = "active" | "invited" | "offline";
 type CaseStatus = "in_progress" | "pending" | "completed";
@@ -191,13 +194,7 @@ export default function TeamsPage() {
   const [query, setQuery] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = window.setTimeout(() => setToast(null), 2200);
-    return () => window.clearTimeout(t);
-  }, [toast]);
+  const toast = useToast();
 
   const selectedMember = useMemo(
     () => members.find((m) => m.id === selectedId) ?? null,
@@ -238,7 +235,19 @@ export default function TeamsPage() {
       },
     ]);
     setAddOpen(false);
-    setToast(`Invite sent to ${phone}`);
+    toast.show(`Invite sent to ${phone}`);
+  };
+
+  const handleRemove = (id: string) => {
+    const removed = members.find((m) => m.id === id);
+    setMembers((prev) => prev.filter((m) => m.id !== id));
+    setSelectedId(null);
+    if (removed) toast.show(`${removed.name} removed from your team`);
+  };
+
+  const handleResend = (id: string) => {
+    const m = members.find((x) => x.id === id);
+    if (m) toast.show(`Invite resent to ${m.phone || m.name}`);
   };
 
   if (selectedMember) {
@@ -247,6 +256,8 @@ export default function TeamsPage() {
         <MemberDetail
           member={selectedMember}
           onBack={() => setSelectedId(null)}
+          onRemove={() => handleRemove(selectedMember.id)}
+          onResend={() => handleResend(selectedMember.id)}
         />
       </PhoneFrame>
     );
@@ -322,17 +333,6 @@ export default function TeamsPage() {
           Add team member
         </Button>
       </div>
-
-      {toast && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-24 z-40 flex justify-center px-4">
-          <div className="pointer-events-auto inline-flex items-center gap-2 max-w-[92%] px-4 h-11 rounded-full bg-neutral-900 text-white shadow-e2">
-            <span className="w-5 h-5 rounded-full bg-success flex items-center justify-center shrink-0">
-              <Check size={12} strokeWidth={3} className="text-white" />
-            </span>
-            <span className="t-body-sm font-medium truncate">{toast}</span>
-          </div>
-        </div>
-      )}
 
       <AddMemberSheet
         open={addOpen}
@@ -436,11 +436,45 @@ function MemberCard({
 function MemberDetail({
   member,
   onBack,
+  onRemove,
+  onResend,
 }: {
   member: Member;
   onBack: () => void;
+  onRemove: () => void;
+  onResend: () => void;
 }) {
   const status = STATUS_META[member.status];
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [resending, setResending] = useState(false);
+
+  const handleResendClick = () => {
+    if (resending) return;
+    setResending(true);
+    window.setTimeout(() => {
+      onResend();
+      setResending(false);
+    }, 800);
+  };
+
+  useEffect(() => {
+    if (!confirmOpen) return;
+    const h = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !removing) setConfirmOpen(false);
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [confirmOpen, removing]);
+
+  const handleConfirm = () => {
+    if (removing) return;
+    setRemoving(true);
+    window.setTimeout(() => {
+      onRemove();
+    }, 500);
+  };
+
   return (
     <>
       <AppBar back onClick={onBack} title={member.name} />
@@ -523,8 +557,97 @@ function MemberDetail({
             </div>
           )}
         </div>
+
+        <div className="pt-4 space-y-2">
+          {member.status === "invited" && (
+            <Button
+              variant="primary"
+              size="md"
+              fullWidth
+              leftIcon={<Send size={16} />}
+              loading={resending}
+              onClick={handleResendClick}
+            >
+              {resending ? "Resending…" : "Resend invite"}
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="md"
+            fullWidth
+            leftIcon={<Trash2 size={16} />}
+            onClick={() => setConfirmOpen(true)}
+            className="!text-error-bold hover:!bg-error-subtle/60"
+          >
+            Remove from team
+          </Button>
+        </div>
       </div>
 
+      {confirmOpen && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center px-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="remove-title"
+        >
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={() => !removing && setConfirmOpen(false)}
+            className="absolute inset-0 bg-black/50 animate-[fadeInBackdrop_180ms_ease-out]"
+          />
+          <div className="relative w-full max-w-[340px] bg-white rounded-2xl shadow-e3 p-5 animate-[dialogIn_200ms_cubic-bezier(0.2,0,0,1)]">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-full bg-error-subtle text-error-bold flex items-center justify-center mb-3">
+                <AlertTriangle size={24} />
+              </div>
+              <h3
+                id="remove-title"
+                className="t-h3 font-bold text-neutral-800"
+              >
+                Remove {member.name}?
+              </h3>
+              <p className="t-body-sm text-neutral-600 mt-1.5">
+                They won&apos;t see new cases from your team. Any active cases
+                assigned to them stay open.
+              </p>
+            </div>
+
+            <div className="mt-5 flex gap-2">
+              <Button
+                variant="secondary"
+                size="md"
+                fullWidth
+                disabled={removing}
+                onClick={() => setConfirmOpen(false)}
+              >
+                Keep
+              </Button>
+              <Button
+                variant="destructive"
+                size="md"
+                fullWidth
+                loading={removing}
+                onClick={handleConfirm}
+              >
+                {removing ? "Removing…" : "Yes, remove"}
+              </Button>
+            </div>
+          </div>
+
+          <style jsx global>{`
+            @keyframes dialogIn {
+              from { opacity: 0; transform: scale(0.96); }
+              to { opacity: 1; transform: scale(1); }
+            }
+            @keyframes fadeInBackdrop {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+          `}</style>
+        </div>
+      )}
     </>
   );
 }
@@ -606,15 +729,35 @@ function AddMemberSheet({
 }) {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [phoneTouched, setPhoneTouched] = useState(false);
+  const [emailTouched, setEmailTouched] = useState(false);
 
   useEffect(() => {
     if (!open) {
       setPhone("");
       setEmail("");
+      setPhoneTouched(false);
+      setEmailTouched(false);
     }
   }, [open]);
 
-  const canSubmit = phone.trim().length >= 10;
+  const phoneDigits = phone.replace(/\D/g, "");
+  const phoneError =
+    phoneDigits.length === 0
+      ? "Mobile number is required."
+      : !/^(91)?[6-9]\d{9}$/.test(phoneDigits)
+        ? "Enter a valid 10-digit Indian mobile number."
+        : null;
+  const emailTrimmed = email.trim();
+  const emailError =
+    emailTrimmed.length === 0
+      ? null
+      : !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailTrimmed)
+        ? "Enter a valid email address."
+        : null;
+  const canSubmit = phoneError === null && emailError === null;
+  const showPhoneError = phoneTouched && phoneError;
+  const showEmailError = emailTouched && emailError;
 
   return (
     <div
@@ -642,9 +785,6 @@ function AddMemberSheet({
             <div className="t-h3 font-bold text-neutral-800">
               Invite Sub-Lawyer
             </div>
-            <div className="t-caption text-neutral-500 mt-0.5">
-              They&apos;ll get an SMS with a link to join your team.
-            </div>
           </div>
           <button
             type="button"
@@ -661,25 +801,39 @@ function AddMemberSheet({
             label="Mobile number"
             required
             icon={<Phone size={14} className="text-neutral-400" />}
+            error={showPhoneError ? phoneError : null}
           >
             <input
               value={phone}
               onChange={(e) => setPhone(e.target.value.replace(/[^\d+ ]/g, ""))}
+              onBlur={() => setPhoneTouched(true)}
               placeholder="+91 98xxxxxxxx"
               inputMode="tel"
-              className="w-full h-11 pl-9 pr-3 rounded-lg border border-[var(--border-default)] bg-white t-body text-neutral-800 focus:outline-none focus:border-primary-500 placeholder:text-neutral-400 tabular"
+              aria-invalid={showPhoneError ? true : undefined}
+              className={`w-full h-11 pl-9 pr-3 rounded-lg border bg-white t-body text-neutral-800 focus:outline-none placeholder:text-neutral-400 tabular ${
+                showPhoneError
+                  ? "border-error focus:border-error"
+                  : "border-[var(--border-default)] focus:border-primary-500"
+              }`}
             />
           </Field>
           <Field
             label="Email (optional)"
             icon={<Mail size={14} className="text-neutral-400" />}
+            error={showEmailError ? emailError : null}
           >
             <input
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onBlur={() => setEmailTouched(true)}
               placeholder="name@example.com"
               inputMode="email"
-              className="w-full h-11 pl-9 pr-3 rounded-lg border border-[var(--border-default)] bg-white t-body text-neutral-800 focus:outline-none focus:border-primary-500 placeholder:text-neutral-400"
+              aria-invalid={showEmailError ? true : undefined}
+              className={`w-full h-11 pl-9 pr-3 rounded-lg border bg-white t-body text-neutral-800 focus:outline-none placeholder:text-neutral-400 ${
+                showEmailError
+                  ? "border-error focus:border-error"
+                  : "border-[var(--border-default)] focus:border-primary-500"
+              }`}
             />
           </Field>
 
@@ -703,7 +857,12 @@ function AddMemberSheet({
             variant="primary"
             fullWidth
             disabled={!canSubmit}
-            onClick={() => onInvite(phone.trim())}
+            onClick={() => {
+              setPhoneTouched(true);
+              setEmailTouched(true);
+              if (!canSubmit) return;
+              onInvite(phone.trim());
+            }}
           >
             Send invite
           </Button>
@@ -717,11 +876,13 @@ function Field({
   label,
   required,
   icon,
+  error,
   children,
 }: {
   label: string;
   required?: boolean;
   icon?: React.ReactNode;
+  error?: string | null;
   children: React.ReactNode;
 }) {
   return (
@@ -736,6 +897,12 @@ function Field({
         )}
         {children}
       </div>
+      {error && (
+        <p className="mt-1.5 flex items-center gap-1.5 t-caption font-medium text-error">
+          <AlertTriangle size={12} />
+          {error}
+        </p>
+      )}
     </label>
   );
 }

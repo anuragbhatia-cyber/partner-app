@@ -60,7 +60,7 @@ export function PhoneFrame({
       {/* Phone chrome — bezel only shows on md+; on mobile the UI is edge-to-edge */}
       <div className="relative w-full md:max-w-[420px] md:rounded-[42px] md:bg-neutral-900 md:p-2 md:shadow-e3">
         {/* Screen */}
-        <div className="relative bg-[var(--surface-bg)] w-full md:rounded-[34px] md:overflow-hidden md:aspect-[9/19.5] min-h-screen md:min-h-0">
+        <div className="relative bg-[var(--surface-bg)] w-full md:rounded-[34px] md:overflow-hidden md:aspect-[9/19.5] min-h-screen md:min-h-0 md:[contain:paint]">
           {/* Status bar — desktop only (mobile OS has its own) */}
           <div
             className={cn(
@@ -103,7 +103,7 @@ export function PhoneShell({
 }) {
   return (
     <div className="relative w-full h-full rounded-[42px] bg-neutral-900 p-2 shadow-e3 ring-1 ring-white/5">
-      <div className="relative rounded-[34px] overflow-hidden bg-[var(--surface-bg)] w-full h-full flex flex-col">
+      <div className="relative rounded-[34px] overflow-hidden bg-[var(--surface-bg)] w-full h-full flex flex-col [contain:paint]">
         {/* Status bar — dedicated row, sits above content */}
         <div
           className={cn(

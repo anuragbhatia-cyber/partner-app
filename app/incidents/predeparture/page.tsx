@@ -14,15 +14,81 @@ import {
   Phone,
   ChevronRight,
   Navigation,
+  CheckCircle2,
 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+
+const IRN = "IRN-100842";
+const CLIENT_PHONE = "+919876543210";
+const CALL_KEY = `lp_call_log_${IRN}`;
+
+function relativeTime(ms: number) {
+  const diff = Math.max(0, Date.now() - ms);
+  const s = Math.floor(diff / 1000);
+  if (s < 60) return "just now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
 
 export default function PreDeparturePage() {
+  const [lastCalledAt, setLastCalledAt] = useState<number | null>(null);
+  const [callCount, setCallCount] = useState(0);
+  const callLinkRef = useRef<HTMLAnchorElement>(null);
+
+  useEffect(() => {
+    try {
+      const raw = window.sessionStorage.getItem(CALL_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as { at: number; count: number };
+        setLastCalledAt(parsed.at);
+        setCallCount(parsed.count);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // Re-render every 30s so the "Xm ago" stays current
+  useEffect(() => {
+    if (!lastCalledAt) return;
+    const t = window.setInterval(() => setLastCalledAt((v) => v), 30000);
+    return () => window.clearInterval(t);
+  }, [lastCalledAt]);
+
+  const handleCall = () => {
+    const now = Date.now();
+    const nextCount = callCount + 1;
+    setLastCalledAt(now);
+    setCallCount(nextCount);
+    try {
+      window.sessionStorage.setItem(
+        CALL_KEY,
+        JSON.stringify({ at: now, count: nextCount })
+      );
+    } catch {
+      /* ignore */
+    }
+    callLinkRef.current?.click();
+  };
+
   return (
     <PhoneFrame label="Incident · Pre-departure">
+      <a
+        ref={callLinkRef}
+        href={`tel:${CLIENT_PHONE}`}
+        className="hidden"
+        aria-hidden
+        tabIndex={-1}
+      >
+        Call
+      </a>
       <AppBar
         back
         href="/incidents"
-        title="IRN-100842"
+        title={IRN}
         action={
           <button className="w-10 h-10 flex items-center justify-center rounded-full">
             <MoreVertical size={20} className="text-neutral-700" />
@@ -94,12 +160,25 @@ export default function PreDeparturePage() {
                 <div className="t-caption font-mono text-neutral-500 mt-0.5">
                   KA-01-AB-1234 · Maruti Swift
                 </div>
+                {lastCalledAt && (
+                  <div className="mt-1.5 inline-flex items-center gap-1 t-caption text-success-bold">
+                    <CheckCircle2 size={12} strokeWidth={2.5} />
+                    <span>
+                      Called {relativeTime(lastCalledAt)}
+                      {callCount > 1 ? ` · ${callCount} attempts` : ""}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
             <div className="border-t border-[var(--border-subtle)]">
-              <button className="w-full flex items-center justify-center gap-2 py-3 t-body-sm font-semibold text-success-bold hover:bg-success-subtle/50">
+              <button
+                type="button"
+                onClick={handleCall}
+                className="w-full flex items-center justify-center gap-2 py-3 t-body-sm font-semibold text-success-bold hover:bg-success-subtle/50"
+              >
                 <Phone size={16} />
-                Call
+                {lastCalledAt ? "Call again" : "Call"}
               </button>
             </div>
           </Card>
@@ -151,7 +230,6 @@ export default function PreDeparturePage() {
           size="lg"
           fullWidth
           href="/incidents/enroute"
-          rightIcon={<ChevronRight size={18} />}
         >
           Start Journey
         </Button>

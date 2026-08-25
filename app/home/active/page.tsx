@@ -146,7 +146,6 @@ export default function HomeActivePage() {
               size="lg"
               fullWidth
               href="/incidents/complete"
-              rightIcon={<ChevronRight size={18} />}
             >
               Mark Complete
             </Button>
@@ -155,7 +154,7 @@ export default function HomeActivePage() {
                 href="/incidents/active"
                 className="t-body-sm font-medium text-primary-600"
               >
-                Open full case →
+                Open full case
               </Link>
             </div>
           </div>

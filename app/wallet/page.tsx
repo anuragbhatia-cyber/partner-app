@@ -10,7 +10,7 @@ import {
   ArrowDownLeft,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Range = "7d" | "30d" | "90d";
 
@@ -52,10 +52,23 @@ const RANGE_DATA: Record<
   },
 };
 
+const DEFAULT_BALANCE = 4250;
+
 export default function WalletHomePage() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [range, setRange] = useState<Range>("7d");
+  const [balance, setBalance] = useState(DEFAULT_BALANCE);
   const rangeData = RANGE_DATA[range];
+
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("balance");
+    if (q !== null) {
+      const parsed = Number(q);
+      if (!Number.isNaN(parsed) && parsed >= 0) setBalance(parsed);
+    }
+  }, []);
+
+  const canWithdraw = balance > 0;
 
   return (
     <PhoneFrame label="Wallet · Home">
@@ -84,18 +97,35 @@ export default function WalletHomePage() {
           <div className="t-body font-semibold text-neutral-600 mb-2">
             Available to withdraw
           </div>
-          <div className="t-hero font-bold tabular text-neutral-800 leading-none tracking-tight font-mono">
-            ₹4,250
+          <div
+            className={`t-hero font-bold tabular leading-none tracking-tight font-mono ${
+              canWithdraw ? "text-neutral-800" : "text-neutral-400"
+            }`}
+          >
+            ₹{balance.toLocaleString("en-IN")}
           </div>
           <Button
             variant="primary"
             size="lg"
             fullWidth
-            href="/wallet/payout"
+            href={canWithdraw ? "/wallet/payout" : undefined}
+            disabled={!canWithdraw}
             className="mt-5"
           >
             Request Payout
           </Button>
+          {!canWithdraw && (
+            <p className="t-body-sm text-neutral-500 text-center mt-3">
+              Nothing to withdraw yet.{" "}
+              <Link
+                href="/leads"
+                className="font-semibold text-primary-600 hover:text-primary-700"
+              >
+                Pick up a case
+              </Link>{" "}
+              to earn your first payout.
+            </p>
+          )}
         </Card>
 
         <CommissionCard />
@@ -145,7 +175,7 @@ export default function WalletHomePage() {
               href="/wallet/transactions"
               className="t-caption font-semibold text-primary-600"
             >
-              View all →
+              View all
             </Link>
           </div>
           <div className="divide-y divide-[var(--border-subtle)] border-t border-[var(--border-subtle)]">

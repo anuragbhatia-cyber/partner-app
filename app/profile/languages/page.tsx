@@ -17,11 +17,9 @@ const OPTIONS = [
 ];
 
 export default function ProfileLanguagesPage() {
-  const [primary, setPrimary] = useState("en");
   const [spoken, setSpoken] = useState<string[]>(["en", "hi", "kn"]);
 
   const toggle = (code: string) => {
-    if (code === primary) return;
     setSpoken((prev) =>
       prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
     );
@@ -32,51 +30,23 @@ export default function ProfileLanguagesPage() {
       <AppBar back href="/profile" title="Languages" />
 
       <div className="px-4 py-4 pb-32 space-y-4">
-        <SectionLabel className="mb-2">App language</SectionLabel>
-        <Card padding="none" className="divide-y divide-[var(--border-subtle)]">
-          {OPTIONS.map((o) => (
-            <button
-              key={o.code}
-              type="button"
-              onClick={() => setPrimary(o.code)}
-              className="w-full flex items-center px-4 py-3.5 hover:bg-neutral-50 transition-colors"
-            >
-              <div className="flex-1 min-w-0 text-left">
-                <div className="t-body font-medium text-neutral-800">
-                  {o.label}
-                </div>
-                <div className="t-caption text-neutral-500 mt-0.5">
-                  {o.native}
-                </div>
-              </div>
-              {primary === o.code && (
-                <Check size={18} className="text-primary-600 shrink-0" />
-              )}
-            </button>
-          ))}
-        </Card>
-
         <SectionLabel className="mb-2">Languages you speak</SectionLabel>
         <Card padding="none" className="divide-y divide-[var(--border-subtle)]">
           {OPTIONS.map((o) => {
             const selected = spoken.includes(o.code);
-            const isPrimary = primary === o.code;
             return (
               <button
                 key={o.code}
                 type="button"
                 onClick={() => toggle(o.code)}
-                disabled={isPrimary}
-                className="w-full flex items-center px-4 py-3.5 hover:bg-neutral-50 transition-colors disabled:opacity-60"
+                className="w-full flex items-center px-4 py-3.5 hover:bg-neutral-50 transition-colors"
               >
                 <div className="flex-1 min-w-0 text-left">
                   <div className="t-body font-medium text-neutral-800">
                     {o.label}
-                    {isPrimary && (
-                      <span className="ml-2 t-caption font-semibold text-primary-600">
-                        · Primary
-                      </span>
-                    )}
+                  </div>
+                  <div className="t-caption text-neutral-500 mt-0.5">
+                    {o.native}
                   </div>
                 </div>
                 <div

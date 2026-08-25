@@ -4,8 +4,10 @@ import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
 import { BottomTabBar } from "@/components/BottomTabBar";
 import { CommissionCard } from "@/components/CommissionCard";
 import { Button, Chip } from "@/components/ui";
-import { MapPin, IndianRupee, Clock, Check } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { MapPin, IndianRupee, Clock, Inbox } from "lucide-react";
+import { useToast } from "@/components/Toast";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 import {
   assignLead,
   CATEGORY_LABELS,
@@ -17,16 +19,10 @@ import {
   useLeadsStore,
 } from "@/lib/leads-store";
 
-const urgencyTone: Record<LeadUrgency, "error" | "warning" | "neutral"> = {
-  high: "error",
-  medium: "warning",
-  low: "neutral",
-};
-
-const urgencyLabel: Record<LeadUrgency, string> = {
-  high: "HIGH",
-  medium: "MED",
-  low: "LOW",
+const urgencyDeadline: Record<LeadUrgency, string> = {
+  high: "2 days",
+  medium: "5 days",
+  low: "10 days",
 };
 
 type Filter = "all" | LeadCategory;
@@ -45,13 +41,7 @@ function fmtTime(min: number) {
 export default function LeadsPage() {
   const { leads } = useLeadsStore();
   const [filter, setFilter] = useState<Filter>("all");
-  const [toast, setToast] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = window.setTimeout(() => setToast(null), 2200);
-    return () => window.clearTimeout(t);
-  }, [toast]);
+  const toast = useToast();
 
   const counts = useMemo(() => {
     const c: Record<Filter, number> = {
@@ -71,7 +61,7 @@ export default function LeadsPage() {
 
   const handleAssign = (lead: Lead) => {
     assignLead(lead.id);
-    setToast(`${lead.type} assigned to you`);
+    toast.show(`${lead.type} assigned to you`);
   };
 
   return (
@@ -125,28 +115,17 @@ export default function LeadsPage() {
 
       <div className="px-4 pt-3 pb-24 space-y-3">
         {filtered.length === 0 ? (
-          <div className="text-center py-16 t-body-sm text-neutral-400">
-            {leads.length === 0
-              ? "No leads right now — check back soon."
-              : `No ${filter === "all" ? "" : CATEGORY_LABELS[filter]} leads open.`}
-          </div>
+          <LeadsEmpty
+            filter={filter}
+            noneAtAll={leads.length === 0}
+            onShowAll={() => setFilter("all")}
+          />
         ) : (
           filtered.map((lead) => (
             <LeadCard key={lead.id} lead={lead} onAssign={() => handleAssign(lead)} />
           ))
         )}
       </div>
-
-      {toast && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-24 z-40 flex justify-center px-4">
-          <div className="pointer-events-auto inline-flex items-center gap-2 max-w-[92%] px-4 h-11 rounded-full bg-neutral-900 text-white shadow-e2">
-            <span className="w-5 h-5 rounded-full bg-success flex items-center justify-center shrink-0">
-              <Check size={12} strokeWidth={3} className="text-white" />
-            </span>
-            <span className="t-body-sm font-medium truncate">{toast}</span>
-          </div>
-        </div>
-      )}
 
       <BottomTabBar active="leads" />
     </PhoneFrame>
@@ -190,47 +169,52 @@ function FilterPill({
 
 function LeadCard({ lead, onAssign }: { lead: Lead; onAssign: () => void }) {
   return (
-    <div className="rounded-xl bg-white shadow-e1 border border-[var(--border-default)] p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="t-body-lg font-semibold text-neutral-900 truncate">
-            {lead.type}
+    <div className="rounded-xl bg-white shadow-e1 border border-[var(--border-default)] overflow-hidden transition-shadow hover:shadow-e2">
+      <Link
+        href={`/leads/${encodeURIComponent(lead.id)}`}
+        className="block p-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 rounded-t-xl"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="t-body-lg font-semibold text-neutral-900 truncate">
+              {lead.type}
+            </div>
+            <div className="t-caption text-neutral-500 mt-0.5">{lead.id}</div>
           </div>
-          <div className="t-caption text-neutral-500 mt-0.5">{lead.id}</div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Chip tone={CATEGORY_TONE[lead.category]} size="sm">
-            {CATEGORY_LABELS[lead.category]}
-          </Chip>
-          <Chip tone={urgencyTone[lead.urgency]} size="sm">
-            {urgencyLabel[lead.urgency]}
-          </Chip>
-        </div>
-      </div>
-
-      <p className="t-body-sm text-neutral-700 mt-2 line-clamp-2">
-        {lead.description}
-      </p>
-
-      <div className="mt-3 flex items-end justify-between gap-3">
-        <div className="min-w-0">
-          <div className="t-h1 font-extrabold tabular text-success-bold inline-flex items-center leading-none">
-            <IndianRupee size={20} className="mr-0.5" />
-            {lead.payoutRange
-              ? `${lead.payoutRange[0].toLocaleString("en-IN")} – ₹${lead.payoutRange[1].toLocaleString("en-IN")}`
-              : lead.amount.toLocaleString("en-IN")}
+          <div className="flex items-center gap-4 shrink-0">
+            <Chip tone={CATEGORY_TONE[lead.category]} size="sm">
+              {CATEGORY_LABELS[lead.category]}
+            </Chip>
+            <span className="t-caption font-semibold text-error">
+              {urgencyDeadline[lead.urgency]}
+            </span>
           </div>
         </div>
-        <div className="text-right shrink-0 space-y-1">
-          <div className="inline-flex items-center gap-1 t-body-sm font-semibold text-neutral-800">
-            <MapPin size={13} className="text-neutral-500" />
-            {lead.distanceKm} km
-          </div>
-          <div className="t-caption text-neutral-500">{lead.area}</div>
-        </div>
-      </div>
 
-      <div className="mt-3 pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between gap-3">
+        <p className="t-body-sm text-neutral-700 mt-2 line-clamp-2">
+          {lead.description}
+        </p>
+
+        <div className="mt-3 flex items-end justify-between gap-3">
+          <div className="min-w-0">
+            <div className="t-h1 font-extrabold tabular text-success-bold inline-flex items-center leading-none">
+              <IndianRupee size={20} className="mr-0.5" />
+              {lead.payoutRange
+                ? `${lead.payoutRange[0].toLocaleString("en-IN")} – ₹${lead.payoutRange[1].toLocaleString("en-IN")}`
+                : lead.amount.toLocaleString("en-IN")}
+            </div>
+          </div>
+          <div className="text-right shrink-0 space-y-1">
+            <div className="inline-flex items-center gap-1 t-body-sm font-semibold text-neutral-800">
+              <MapPin size={13} className="text-neutral-500" />
+              {lead.distanceKm} km
+            </div>
+            <div className="t-caption text-neutral-500">{lead.area}</div>
+          </div>
+        </div>
+      </Link>
+
+      <div className="px-4 pt-3 pb-4 border-t border-[var(--border-subtle)] flex items-center justify-between gap-3">
         <div className="inline-flex items-center gap-1 t-caption text-neutral-500">
           <Clock size={12} />
           {fmtTime(lead.postedMinAgo)}
@@ -244,6 +228,54 @@ function LeadCard({ lead, onAssign }: { lead: Lead; onAssign: () => void }) {
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function LeadsEmpty({
+  filter,
+  noneAtAll,
+  onShowAll,
+}: {
+  filter: Filter;
+  noneAtAll: boolean;
+  onShowAll: () => void;
+}) {
+  const isFiltered = filter !== "all";
+  const label = isFiltered ? CATEGORY_LABELS[filter as LeadCategory] : "";
+
+  let title: string;
+  let subtitle: string;
+  if (noneAtAll) {
+    title = "You're all caught up";
+    subtitle =
+      "No open leads in your area right now. New ones land here in real time.";
+  } else if (isFiltered) {
+    title = `No open ${label} leads`;
+    subtitle = "Try another category or check back in a few minutes.";
+  } else {
+    title = "No open leads right now";
+    subtitle = "New leads land here as they come in.";
+  }
+
+  return (
+    <div className="rounded-2xl border border-dashed border-[var(--border-default)] bg-white/60 px-5 py-10 text-center">
+      <div className="w-12 h-12 mx-auto rounded-full bg-primary-50 text-primary-700 flex items-center justify-center mb-3">
+        <Inbox size={22} />
+      </div>
+      <h3 className="t-body-lg font-semibold text-neutral-800">{title}</h3>
+      <p className="t-body-sm text-neutral-500 mt-1 max-w-[260px] mx-auto">
+        {subtitle}
+      </p>
+      {isFiltered && !noneAtAll && (
+        <button
+          type="button"
+          onClick={onShowAll}
+          className="mt-4 h-9 px-3.5 rounded-full border border-[var(--border-default)] text-neutral-700 t-body-sm font-semibold hover:border-primary-300"
+        >
+          Show all
+        </button>
+      )}
     </div>
   );
 }
