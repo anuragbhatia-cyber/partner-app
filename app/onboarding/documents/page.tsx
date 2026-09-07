@@ -199,7 +199,7 @@ function DocCard({
             )}
             {done && filename ? (
               <div className="t-caption text-neutral-500 mt-0.5 truncate">
-                {filename} · Tap to replace
+                {filename}
               </div>
             ) : !done ? (
               <div className="t-caption text-error font-medium mt-0.5">
