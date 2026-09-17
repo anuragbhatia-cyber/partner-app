@@ -2,10 +2,11 @@
 
 import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
 import { Button, Card } from "@/components/ui";
-import { OnboardingStepBar } from "@/app/onboarding/steps";
+import { OnboardingStepBar, getOnboardingSteps } from "@/app/onboarding/steps";
 import {
   getOnboarding,
   setOnboarding,
+  type AccountType,
   type Role,
 } from "@/lib/onboarding-store";
 import { Check } from "lucide-react";
@@ -22,14 +23,14 @@ const ROLES: {
   {
     key: "lawyer",
     title: "I Am A Lawyer",
-    desc: "On-spot legal representation for challans, accidents, and court matters",
+    desc: "Legal help for challans, accidents, and court",
     img: "/lawyer-icon.png",
     alt: "Lawyer",
   },
   {
     key: "rto",
     title: "I Am An RTO Agent",
-    desc: "RTO documentation, registration, and challan management",
+    desc: "RTO paperwork, registration, and challans",
     img: "/rto-agent-icon.png",
     alt: "RTO Agent",
   },
@@ -37,12 +38,14 @@ const ROLES: {
 
 export default function RoleSelectPage() {
   const [selected, setSelected] = useState<Role[]>([]);
+  const [accountType, setAccountType] = useState<AccountType | undefined>();
   const [saving, setSaving] = useState(false);
   const nextLinkRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
-    const stored = getOnboarding().roles;
-    if (stored && stored.length) setSelected(stored);
+    const stored = getOnboarding();
+    if (stored.roles && stored.roles.length) setSelected(stored.roles);
+    setAccountType(stored.accountType);
   }, []);
 
   const toggle = (r: Role) =>
@@ -74,15 +77,16 @@ export default function RoleSelectPage() {
 
       <div className="flex flex-col min-h-[calc(100%-4rem)] px-4 pt-4 pb-6">
         <div className="mb-6">
-          <OnboardingStepBar current={2} label="Expertise" />
+          <OnboardingStepBar
+            current={2}
+            label="Expertise"
+            steps={getOnboardingSteps(accountType)}
+          />
         </div>
 
         <h1 className="t-h1 font-bold text-neutral-800 tracking-tight">
           What Is Your Area Of Practice?
         </h1>
-        <p className="t-body text-neutral-500 mt-2">
-          Choose the role that best matches your practice
-        </p>
 
         <div className="space-y-3 mt-6">
           {ROLES.map((r) => {
@@ -104,12 +108,12 @@ export default function RoleSelectPage() {
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-28 h-28 rounded-xl overflow-hidden shrink-0 relative bg-[#e0f2fe]">
+                    <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0 relative bg-[#e0f2fe]">
                       <Image
                         src={r.img}
                         alt={r.alt}
                         fill
-                        sizes="112px"
+                        sizes="80px"
                         className="object-cover object-center"
                       />
                     </div>

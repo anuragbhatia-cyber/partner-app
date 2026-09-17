@@ -14,6 +14,12 @@ export type OnboardingState = {
     address?: string;
     photo?: string;
   };
+  business?: {
+    companyName?: string;
+    gstin?: string;
+    pincode?: string;
+    address?: string;
+  };
 };
 
 export function getOnboarding(): OnboardingState {

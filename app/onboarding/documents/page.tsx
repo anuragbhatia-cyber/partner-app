@@ -14,7 +14,12 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { OnboardingStepBar } from "@/app/onboarding/steps";
+import { OnboardingStepBar, getOnboardingSteps } from "@/app/onboarding/steps";
+import {
+  getOnboarding,
+  type AccountType,
+  type Role,
+} from "@/lib/onboarding-store";
 
 type DocKey = "aadhaar" | "pan" | "bar" | "selfie";
 type SourceKind = "camera" | "gallery" | "pdf";
@@ -41,10 +46,26 @@ export default function DocumentsHubPage() {
   const [agreementConsent, setAgreementConsent] = useState(false);
   const [kycConsent, setKycConsent] = useState(false);
   const [policySheet, setPolicySheet] = useState<PolicyKey | null>(null);
+  const [accountType, setAccountType] = useState<AccountType | undefined>();
+  const [roles, setRoles] = useState<Role[]>([]);
 
-  const activeDoc = docs.find((d) => d.key === active) ?? null;
-  const uploadedCount = docs.filter((d) => d.done).length;
-  const allDocsUploaded = uploadedCount === docs.length;
+  useEffect(() => {
+    const stored = getOnboarding();
+    setAccountType(stored.accountType);
+    setRoles(stored.roles ?? []);
+  }, []);
+
+  const visibleDocs = roles.includes("lawyer")
+    ? docs
+    : docs.filter((d) => d.key !== "bar");
+
+  const backHref =
+    accountType === "business" ? "/onboarding/business" : "/onboarding/personal";
+  const steps = getOnboardingSteps(accountType);
+
+  const activeDoc = visibleDocs.find((d) => d.key === active) ?? null;
+  const uploadedCount = visibleDocs.filter((d) => d.done).length;
+  const allDocsUploaded = uploadedCount === visibleDocs.length;
   const canContinue = allDocsUploaded && agreementConsent && kycConsent;
 
   const handleUploaded = (filename: string) => {
@@ -59,20 +80,24 @@ export default function DocumentsHubPage() {
 
   return (
     <PhoneFrame label="Onboarding · Documents">
-      <AppBar back href="/onboarding/personal" title="Documents" />
+      <AppBar back href={backHref} title="Documents" />
 
       <div className="px-4 pt-4 pb-32">
-        <OnboardingStepBar current={4} label="Documents" />
+        <OnboardingStepBar
+          current={steps.length}
+          label="Documents"
+          steps={steps}
+        />
 
         <h1 className="t-h1 font-bold text-neutral-800 tracking-tight mt-6">
           Upload Documents
         </h1>
         <p className="t-body text-neutral-500 mt-2">
-          {uploadedCount} of {docs.length} uploaded
+          {uploadedCount} of {visibleDocs.length} uploaded
         </p>
 
         <div className="space-y-2 mt-6">
-          {docs.map((d) => (
+          {visibleDocs.map((d) => (
             <DocCard
               key={d.key}
               title={d.title}

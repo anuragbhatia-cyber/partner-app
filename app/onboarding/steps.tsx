@@ -1,23 +1,41 @@
-export const ONBOARDING_STEPS = [
+import type { AccountType } from "@/lib/onboarding-store";
+
+type Step = { label: string; href: string };
+
+const BASE_STEPS: Step[] = [
   { label: "Account Type", href: "/account-type" },
   { label: "Expertise", href: "/role" },
   { label: "Personal", href: "/onboarding/personal" },
   { label: "Documents", href: "/onboarding/documents" },
-] as const;
+];
 
-export const ONBOARDING_TOTAL = ONBOARDING_STEPS.length;
+const BUSINESS_STEPS: Step[] = [
+  { label: "Account Type", href: "/account-type" },
+  { label: "Expertise", href: "/role" },
+  { label: "Personal", href: "/onboarding/personal" },
+  { label: "Business", href: "/onboarding/business" },
+  { label: "Documents", href: "/onboarding/documents" },
+];
+
+export function getOnboardingSteps(accountType?: AccountType): Step[] {
+  return accountType === "business" ? BUSINESS_STEPS : BASE_STEPS;
+}
+
+export const ONBOARDING_STEPS = BASE_STEPS;
+export const ONBOARDING_TOTAL = BASE_STEPS.length;
 
 export function OnboardingStepBar({
   current,
   label,
   stepNumber,
-  total = ONBOARDING_TOTAL,
+  steps = BASE_STEPS,
 }: {
   current: number;
   label: string;
   stepNumber?: number;
-  total?: number;
+  steps?: Step[];
 }) {
+  const total = steps.length;
   return (
     <div>
       <div className="t-body-sm font-medium text-neutral-500 mb-2">
@@ -26,7 +44,7 @@ export function OnboardingStepBar({
       <div className="flex items-center gap-2">
         {Array.from({ length: total }).map((_, i) => {
           const stepNum = i + 1;
-          const step = ONBOARDING_STEPS[i];
+          const step = steps[i];
           const done = stepNum < current;
           const filled = done || stepNum === current;
           const canEdit = done && !!step?.href;

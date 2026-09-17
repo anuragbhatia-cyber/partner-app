@@ -36,6 +36,7 @@ import OtpPage from "@/app/otp/page";
 import SessionExpiredPage from "@/app/auth/session-expired/page";
 import AccountTypePage from "@/app/account-type/page";
 import OnboardingPersonalPage from "@/app/onboarding/personal/page";
+import OnboardingBusinessPage from "@/app/onboarding/business/page";
 import OnboardingDocumentsPage from "@/app/onboarding/documents/page";
 import OnboardingKycStatusPage from "@/app/onboarding/kyc-status/page";
 import HomePage from "@/app/home/page";
@@ -71,7 +72,7 @@ import ProfileSupportFaqPage from "@/app/profile/support/faq/[topic]/page";
 
 type ScreenKey =
   | "splash" | "account-type" | "role" | "otp" | "session-expired"
-  | "onboarding-personal" | "onboarding-documents"
+  | "onboarding-personal" | "onboarding-business" | "onboarding-documents"
   | "onboarding-kyc-status"
   | "home" | "home-active" | "home-incoming" | "home-offline"
   | "leads" | "lead-detail"
@@ -103,6 +104,7 @@ const SCREENS: ScreenDef[] = [
   { key: "role", title: "Role Select", section: "auth", path: "/role", Component: RolePage },
   { key: "session-expired", title: "Session Expired", section: "auth", path: "/auth/session-expired", Component: SessionExpiredPage },
   { key: "onboarding-personal", title: "Personal", section: "onboard", path: "/onboarding/personal", Component: OnboardingPersonalPage },
+  { key: "onboarding-business", title: "Business", section: "onboard", path: "/onboarding/business", Component: OnboardingBusinessPage },
   { key: "onboarding-documents", title: "Documents", section: "onboard", path: "/onboarding/documents", Component: OnboardingDocumentsPage },
   { key: "onboarding-kyc-status", title: "KYC Status", section: "onboard", path: "/onboarding/kyc-status", Component: OnboardingKycStatusPage },
   { key: "home", title: "Home", section: "home", path: "/home", Component: HomePage },

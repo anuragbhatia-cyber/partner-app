@@ -634,6 +634,8 @@ function PastPanel({
             status={c.status}
             time={relativeTime(c.date)}
             caseId={c.caseId}
+            amount={c.amount}
+            type={c.type}
           />
         ))}
       </Card>
@@ -657,14 +659,24 @@ function RecentRow({
   status,
   time,
   caseId,
+  amount,
+  type,
 }: {
   status: Status;
   time: string;
   caseId: string;
+  amount?: string;
+  type: string;
 }) {
+  const params = new URLSearchParams({ id: caseId, type });
+  if (amount) params.set("amount", amount);
+  const href =
+    status === "completed"
+      ? `/incidents/completed?${params.toString()}`
+      : "/incidents/active";
   return (
     <Link
-      href="/incidents/active"
+      href={href}
       className="flex items-center gap-3 px-4 py-3 hover:bg-neutral-50/50"
     >
       <div className="flex-1 min-w-0">

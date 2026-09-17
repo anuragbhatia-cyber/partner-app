@@ -11,8 +11,12 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { OnboardingStepBar } from "@/app/onboarding/steps";
-import { getOnboarding, setOnboarding } from "@/lib/onboarding-store";
+import { OnboardingStepBar, getOnboardingSteps } from "@/app/onboarding/steps";
+import {
+  getOnboarding,
+  setOnboarding,
+  type AccountType,
+} from "@/lib/onboarding-store";
 import { useEffect, useRef, useState } from "react";
 
 const TODAY_ISO = new Date().toISOString().slice(0, 10);
@@ -49,6 +53,7 @@ const EMPTY_TOUCHED: Touched = {
 export default function PersonalInfoPage() {
   const [fields, setFields] = useState<Fields>(EMPTY_FIELDS);
   const [touched, setTouched] = useState<Touched>(EMPTY_TOUCHED);
+  const [accountType, setAccountType] = useState<AccountType | undefined>();
   const [saving, setSaving] = useState(false);
   const [canOpenPicker, setCanOpenPicker] = useState(false);
   const [photoSheet, setPhotoSheet] = useState(false);
@@ -56,21 +61,25 @@ export default function PersonalInfoPage() {
   const nextLinkRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
-    const stored = getOnboarding().personal;
-    if (stored) {
+    const stored = getOnboarding();
+    if (stored.personal) {
       setFields({
-        photo: stored.photo ?? "",
-        name: stored.name ?? "",
-        dob: stored.dob ?? "",
-        email: stored.email ?? "",
-        pincode: stored.pincode ?? "",
-        address: stored.address ?? "",
+        photo: stored.personal.photo ?? "",
+        name: stored.personal.name ?? "",
+        dob: stored.personal.dob ?? "",
+        email: stored.personal.email ?? "",
+        pincode: stored.personal.pincode ?? "",
+        address: stored.personal.address ?? "",
       });
     }
+    setAccountType(stored.accountType);
     if (typeof dateRef.current?.showPicker === "function") {
       setCanOpenPicker(true);
     }
   }, []);
+
+  const nextHref =
+    accountType === "business" ? "/onboarding/business" : "/onboarding/documents";
 
   const errors = validateAll(fields);
   const isValid = Object.values(errors).every((e) => !e);
@@ -149,7 +158,7 @@ export default function PersonalInfoPage() {
     <PhoneFrame label="Onboarding · Personal">
       <a
         ref={nextLinkRef}
-        href="/onboarding/documents"
+        href={nextHref}
         className="hidden"
         aria-hidden
         tabIndex={-1}
@@ -159,7 +168,11 @@ export default function PersonalInfoPage() {
       <AppBar back href="/role" title="Personal Details" />
 
       <div className="px-4 pt-4 pb-32">
-        <OnboardingStepBar current={3} label="Personal Details" />
+        <OnboardingStepBar
+          current={3}
+          label="Personal Details"
+          steps={getOnboardingSteps(accountType)}
+        />
 
         <h1 className="t-h1 font-bold text-neutral-800 tracking-tight mt-6">
           Enter Personal Details
@@ -630,10 +643,7 @@ function Field({
         {rightIcon && <div className="pr-4">{rightIcon}</div>}
       </div>
       {error && (
-        <p className="mt-1.5 flex items-start gap-1.5 t-caption text-error font-medium">
-          <AlertCircle size={13} className="shrink-0 mt-0.5" />
-          <span>{error}</span>
-        </p>
+        <p className="mt-1.5 t-caption text-error font-medium">{error}</p>
       )}
     </div>
   );

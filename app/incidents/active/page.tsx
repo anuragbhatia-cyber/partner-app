@@ -27,6 +27,7 @@ import {
   ScrollText,
   Send,
   AlertTriangle,
+  Eye,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -289,7 +290,88 @@ function DetailsPanel({
           />
         </Card>
       </div>
+
+      {/* Requested documents */}
+      <div>
+        <SectionLabel className="mb-2">
+          <span>Documents</span>
+        </SectionLabel>
+        <Card padding="none">
+          <div className="divide-y divide-[var(--border-subtle)]">
+            {REQUESTED_DOC_ATTACHMENTS.map((doc) => (
+              <DocumentAttachmentRow key={doc.id} doc={doc} />
+            ))}
+          </div>
+        </Card>
+      </div>
     </>
+  );
+}
+
+type RequestedDocAttachment = {
+  id: string;
+  label: string;
+  file: { name: string; size: string; uploadedAt: string };
+  icon: React.ReactNode;
+};
+
+const REQUESTED_DOC_ATTACHMENTS: RequestedDocAttachment[] = [
+  {
+    id: "driving-license",
+    label: "Driving licence",
+    file: {
+      name: "driving-licence.pdf",
+      size: "1.2 MB",
+      uploadedAt: "10:52",
+    },
+    icon: <IdCard size={18} />,
+  },
+  {
+    id: "rc",
+    label: "Registration certificate",
+    file: {
+      name: "rc-book.pdf",
+      size: "864 KB",
+      uploadedAt: "10:54",
+    },
+    icon: <Car size={18} />,
+  },
+  {
+    id: "challan",
+    label: "Original challan / notice",
+    file: {
+      name: "e-challan-MH012024.pdf",
+      size: "412 KB",
+      uploadedAt: "11:02",
+    },
+    icon: <Receipt size={18} />,
+  },
+];
+
+function DocumentAttachmentRow({ doc }: { doc: RequestedDocAttachment }) {
+  return (
+    <div className="flex items-center gap-3 p-3">
+      <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-primary-50 text-primary-700">
+        {doc.icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="t-body-sm font-semibold text-neutral-800 truncate">
+          {doc.label}
+        </div>
+        <div className="mt-0.5 flex items-center gap-1.5 text-neutral-500 t-caption min-w-0">
+          <FileText size={12} className="text-error-bold shrink-0" />
+          <span className="truncate">{doc.file.name}</span>
+          <span className="shrink-0">· {doc.file.size}</span>
+        </div>
+      </div>
+      <button
+        type="button"
+        aria-label={`Preview ${doc.file.name}`}
+        className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-neutral-600 hover:bg-neutral-100"
+      >
+        <Eye size={16} />
+      </button>
+    </div>
   );
 }
 
