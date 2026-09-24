@@ -53,6 +53,8 @@ import IncidentPreDeparturePage from "@/app/incidents/predeparture/page";
 import IncidentEnRoutePage from "@/app/incidents/enroute/page";
 import IncidentActivePage from "@/app/incidents/active/page";
 import IncidentCompletePage from "@/app/incidents/complete/page";
+import IncidentCompletedPage from "@/app/incidents/completed/page";
+import IncidentCancelledPage from "@/app/incidents/cancelled/page";
 import IncidentHistoryPage from "@/app/incidents/history/page";
 import WalletPage from "@/app/wallet/page";
 import WalletTransactionsPage from "@/app/wallet/transactions/page";
@@ -80,7 +82,7 @@ type ScreenKey =
   | "ai"
   | "knowledge"
   | "incidents" | "incidents-predeparture" | "incidents-enroute"
-  | "incidents-active" | "incidents-complete" | "incidents-history"
+  | "incidents-active" | "incidents-complete" | "incidents-completed" | "incidents-cancelled" | "incidents-history"
   | "wallet" | "wallet-transactions" | "wallet-payout"
   | "notifications"
   | "profile" | "profile-availability" | "profile-documents"
@@ -121,6 +123,8 @@ const SCREENS: ScreenDef[] = [
   { key: "incidents-enroute", title: "En Route", section: "incidents", path: "/incidents/enroute", Component: IncidentEnRoutePage },
   { key: "incidents-active", title: "In Progress", section: "incidents", path: "/incidents/active", Component: IncidentActivePage },
   { key: "incidents-complete", title: "Complete", section: "incidents", path: "/incidents/complete", Component: IncidentCompletePage },
+  { key: "incidents-completed", title: "Completed", section: "incidents", path: "/incidents/completed", Component: IncidentCompletedPage },
+  { key: "incidents-cancelled", title: "Cancelled", section: "incidents", path: "/incidents/cancelled", Component: IncidentCancelledPage },
   { key: "incidents-history", title: "History", section: "incidents", path: "/incidents/history", Component: IncidentHistoryPage },
   { key: "wallet", title: "Wallet", section: "wallet", path: "/wallet", Component: WalletPage },
   { key: "wallet-transactions", title: "Transactions", section: "wallet", path: "/wallet/transactions", Component: WalletTransactionsPage },
@@ -232,7 +236,8 @@ export default function PrototypePlayer() {
         navigate("lead-detail");
         return;
       }
-      const key = pathMap[href];
+      const pathname = href.split("?")[0].split("#")[0];
+      const key = pathMap[pathname];
       if (key) {
         e.preventDefault();
         navigate(key);

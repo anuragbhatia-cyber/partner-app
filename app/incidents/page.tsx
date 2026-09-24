@@ -673,7 +673,7 @@ function RecentRow({
   const href =
     status === "completed"
       ? `/incidents/completed?${params.toString()}`
-      : "/incidents/active";
+      : `/incidents/cancelled?${params.toString()}`;
   return (
     <Link
       href={href}

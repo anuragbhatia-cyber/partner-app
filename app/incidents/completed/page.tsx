@@ -68,6 +68,16 @@ function IncidentCompletedView() {
           </div>
         </Card>
 
+        {/* Fee breakup */}
+        <div>
+          <SectionLabel className="mb-2">Fee Breakup</SectionLabel>
+          <Card padding="none">
+            <FeeRow label="Challan Amount" value="₹2,500" />
+            <FeeRow label="Government Fee" value="₹1,800" />
+            <FeeRow label="Professional Fees" value={amount} highlight />
+          </Card>
+        </div>
+
         {/* Incident details grid */}
         <Card padding="lg">
           <div className="grid grid-cols-2 gap-x-4 gap-y-5">
@@ -143,6 +153,39 @@ function Field({
       <div className="mt-1 t-body font-semibold text-neutral-800 break-words">
         {value}
       </div>
+    </div>
+  );
+}
+
+function FeeRow({
+  label,
+  value,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)] last:border-b-0">
+      <span
+        className={`t-body ${
+          highlight
+            ? "text-success-bold font-semibold"
+            : "text-neutral-600"
+        }`}
+      >
+        {label}
+      </span>
+      <span
+        className={`t-body tabular ${
+          highlight
+            ? "text-success-bold font-bold"
+            : "text-neutral-800 font-semibold"
+        }`}
+      >
+        {value}
+      </span>
     </div>
   );
 }

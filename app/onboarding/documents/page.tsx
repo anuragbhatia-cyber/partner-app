@@ -4,7 +4,6 @@ import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
 import { Button, Card } from "@/components/ui";
 import {
   ChevronRight,
-  Sparkles,
   Camera,
   Image as ImageIcon,
   X,
@@ -21,7 +20,7 @@ import {
   type Role,
 } from "@/lib/onboarding-store";
 
-type DocKey = "aadhaar" | "pan" | "bar" | "selfie";
+type DocKey = "aadhaar" | "pan" | "bar";
 type SourceKind = "camera" | "gallery" | "pdf";
 
 type Doc = {
@@ -40,7 +39,6 @@ export default function DocumentsHubPage() {
     { key: "aadhaar", title: "Aadhaar Card", note: "Front + Back", done: true, filename: "aadhaar.pdf" },
     { key: "pan", title: "PAN Card", done: true, filename: "pan.jpg" },
     { key: "bar", title: "Bar Council ID", done: false },
-    { key: "selfie", title: "Selfie", done: false },
   ]);
   const [active, setActive] = useState<DocKey | null>(null);
   const [agreementConsent, setAgreementConsent] = useState(false);
@@ -108,13 +106,6 @@ export default function DocumentsHubPage() {
             />
           ))}
         </div>
-
-        <Card className="mt-5 bg-[#FEF3C7]! border-transparent! shadow-none! flex items-start gap-2.5">
-          <Sparkles size={16} className="text-[#B45309] shrink-0 mt-0.5" />
-          <div className="t-body font-medium text-[#B45309] leading-relaxed">
-            Tip: Ensure good lighting and all corners are visible
-          </div>
-        </Card>
 
         <div className="space-y-3 mt-5">
           <ConsentRow
@@ -499,13 +490,13 @@ function ConsentRow({
         aria-checked={checked}
         onClick={toggle}
         aria-label={checked ? "Uncheck consent" : "Check consent"}
-        className={`w-5 h-5 mt-0.5 rounded-md flex items-center justify-center shrink-0 transition-all ${
+        className={`w-6 h-6 mt-0.5 rounded-md flex items-center justify-center shrink-0 transition-all ${
           checked
             ? "bg-primary-600 text-white"
             : "border-2 border-neutral-300 bg-white"
         }`}
       >
-        {checked && <Check size={12} strokeWidth={3} />}
+        {checked && <Check size={16} strokeWidth={3} />}
       </button>
       <span
         role="presentation"

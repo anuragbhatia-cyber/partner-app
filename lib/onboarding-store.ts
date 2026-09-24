@@ -8,7 +8,6 @@ export type OnboardingState = {
   roles?: Role[];
   personal?: {
     name?: string;
-    dob?: string;
     email?: string;
     pincode?: string;
     address?: string;

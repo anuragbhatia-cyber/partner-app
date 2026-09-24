@@ -4,7 +4,6 @@ import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
 import { Button } from "@/components/ui";
 import {
   AlertCircle,
-  Calendar,
   Camera,
   Check,
   Image as ImageIcon,
@@ -19,12 +18,9 @@ import {
 } from "@/lib/onboarding-store";
 import { useEffect, useRef, useState } from "react";
 
-const TODAY_ISO = new Date().toISOString().slice(0, 10);
-
 type Fields = {
   photo: string;
   name: string;
-  dob: string;
   email: string;
   pincode: string;
   address: string;
@@ -35,7 +31,6 @@ type Touched = Record<keyof Fields, boolean>;
 const EMPTY_FIELDS: Fields = {
   photo: "",
   name: "",
-  dob: "",
   email: "",
   pincode: "",
   address: "",
@@ -44,7 +39,6 @@ const EMPTY_FIELDS: Fields = {
 const EMPTY_TOUCHED: Touched = {
   photo: false,
   name: false,
-  dob: false,
   email: false,
   pincode: false,
   address: false,
@@ -55,9 +49,7 @@ export default function PersonalInfoPage() {
   const [touched, setTouched] = useState<Touched>(EMPTY_TOUCHED);
   const [accountType, setAccountType] = useState<AccountType | undefined>();
   const [saving, setSaving] = useState(false);
-  const [canOpenPicker, setCanOpenPicker] = useState(false);
   const [photoSheet, setPhotoSheet] = useState(false);
-  const dateRef = useRef<HTMLInputElement>(null);
   const nextLinkRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
@@ -66,16 +58,12 @@ export default function PersonalInfoPage() {
       setFields({
         photo: stored.personal.photo ?? "",
         name: stored.personal.name ?? "",
-        dob: stored.personal.dob ?? "",
         email: stored.personal.email ?? "",
         pincode: stored.personal.pincode ?? "",
         address: stored.personal.address ?? "",
       });
     }
     setAccountType(stored.accountType);
-    if (typeof dateRef.current?.showPicker === "function") {
-      setCanOpenPicker(true);
-    }
   }, []);
 
   const nextHref =
@@ -90,23 +78,12 @@ export default function PersonalInfoPage() {
   const markTouched = (key: keyof Fields) =>
     setTouched((t) => ({ ...t, [key]: true }));
 
-  const openPicker = () => {
-    const el = dateRef.current;
-    if (!el || typeof el.showPicker !== "function") return;
-    try {
-      el.showPicker();
-    } catch (err) {
-      console.warn("DOB picker failed to open; user can type manually.", err);
-    }
-  };
-
   const handleContinue = () => {
     if (saving) return;
     if (!isValid) {
       setTouched({
         photo: true,
         name: true,
-        dob: true,
         email: true,
         pincode: true,
         address: true,
@@ -119,7 +96,6 @@ export default function PersonalInfoPage() {
         personal: {
           photo: fields.photo,
           name: fields.name.trim(),
-          dob: fields.dob,
           email: fields.email.trim(),
           pincode: fields.pincode,
           address: fields.address.trim(),
@@ -229,42 +205,6 @@ export default function PersonalInfoPage() {
             onBlur={() => markTouched("name")}
             maxLength={80}
             error={showError("name")}
-          />
-          <Field
-            label="Date of Birth"
-            placeholder="DD / MM / YYYY"
-            value={fields.dob}
-            onChange={(v) => patch("dob", formatDob(v))}
-            onBlur={() => markTouched("dob")}
-            inputMode="numeric"
-            error={showError("dob")}
-            rightIcon={
-              <>
-                {canOpenPicker && (
-                  <button
-                    type="button"
-                    onClick={openPicker}
-                    aria-label="Open calendar"
-                    className="w-8 h-8 -mr-1 rounded-lg flex items-center justify-center text-neutral-500 hover:text-primary-600 hover:bg-primary-50/50 transition-colors"
-                  >
-                    <Calendar size={16} />
-                  </button>
-                )}
-                <input
-                  ref={dateRef}
-                  type="date"
-                  max={TODAY_ISO}
-                  value={dobToIso(fields.dob) ?? ""}
-                  onChange={(e) => {
-                    patch("dob", isoToDob(e.target.value));
-                    markTouched("dob");
-                  }}
-                  className="sr-only"
-                  tabIndex={-1}
-                  aria-hidden
-                />
-              </>
-            }
           />
           <div className="grid grid-cols-[2fr_1fr] gap-3">
             <Field
@@ -475,7 +415,6 @@ function validateAll(f: Fields): Record<keyof Fields, string | null> {
   return {
     photo: validatePhoto(f.photo),
     name: validateName(f.name),
-    dob: validateDob(f.dob),
     email: validateEmail(f.email),
     pincode: validatePincode(f.pincode),
     address: validateAddress(f.address),
@@ -493,27 +432,6 @@ function validateName(v: string): string | null {
   if (t.length < 2) return "Name must be at least 2 characters.";
   if (!/^[A-Za-z][A-Za-z\s.'-]*$/.test(t))
     return "Use letters, spaces, dots or hyphens only.";
-  return null;
-}
-
-function validateDob(v: string): string | null {
-  if (!v) return "Date of birth is required.";
-  const digits = v.replace(/\D/g, "");
-  if (digits.length !== 8) return "Enter date as DD / MM / YYYY.";
-  const dd = Number(digits.slice(0, 2));
-  const mm = Number(digits.slice(2, 4));
-  const yyyy = Number(digits.slice(4, 8));
-  const d = new Date(yyyy, mm - 1, dd);
-  if (
-    d.getFullYear() !== yyyy ||
-    d.getMonth() !== mm - 1 ||
-    d.getDate() !== dd
-  )
-    return "That date doesn't look right.";
-  if (d > new Date()) return "Date can't be in the future.";
-  const age = ageInYears(d);
-  if (age < 18) return "You must be 18 or older to register.";
-  if (age > 100) return "Please check the year of birth.";
   return null;
 }
 
@@ -537,41 +455,6 @@ function validateAddress(v: string): string | null {
   if (!t) return "Address is required.";
   if (t.length < 10) return "Address feels too short — add more detail.";
   return null;
-}
-
-function ageInYears(dob: Date) {
-  const now = new Date();
-  let age = now.getFullYear() - dob.getFullYear();
-  const m = now.getMonth() - dob.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age -= 1;
-  return age;
-}
-
-/* ---------- date helpers ---------- */
-
-function formatDob(raw: string) {
-  const digits = raw.replace(/\D/g, "").slice(0, 8);
-  const parts = [
-    digits.slice(0, 2),
-    digits.slice(2, 4),
-    digits.slice(4, 8),
-  ].filter(Boolean);
-  return parts.join(" / ");
-}
-
-function dobToIso(dob: string): string | null {
-  const digits = dob.replace(/\D/g, "");
-  if (digits.length !== 8) return null;
-  const dd = digits.slice(0, 2);
-  const mm = digits.slice(2, 4);
-  const yyyy = digits.slice(4, 8);
-  return `${yyyy}-${mm}-${dd}`;
-}
-
-function isoToDob(iso: string): string {
-  if (!iso) return "";
-  const [yyyy, mm, dd] = iso.split("-");
-  return `${dd} / ${mm} / ${yyyy}`;
 }
 
 /* ---------- field ---------- */
