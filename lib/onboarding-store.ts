@@ -6,6 +6,7 @@ export type Role = "lawyer" | "rto";
 export type OnboardingState = {
   accountType?: AccountType;
   roles?: Role[];
+  expertise?: string[];
   personal?: {
     name?: string;
     email?: string;

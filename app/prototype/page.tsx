@@ -35,6 +35,7 @@ import RolePage from "@/app/role/page";
 import OtpPage from "@/app/otp/page";
 import SessionExpiredPage from "@/app/auth/session-expired/page";
 import AccountTypePage from "@/app/account-type/page";
+import OnboardingExpertisePage from "@/app/onboarding/expertise/page";
 import OnboardingPersonalPage from "@/app/onboarding/personal/page";
 import OnboardingBusinessPage from "@/app/onboarding/business/page";
 import OnboardingDocumentsPage from "@/app/onboarding/documents/page";
@@ -74,7 +75,7 @@ import ProfileSupportFaqPage from "@/app/profile/support/faq/[topic]/page";
 
 type ScreenKey =
   | "splash" | "account-type" | "role" | "otp" | "session-expired"
-  | "onboarding-personal" | "onboarding-business" | "onboarding-documents"
+  | "onboarding-expertise" | "onboarding-personal" | "onboarding-business" | "onboarding-documents"
   | "onboarding-kyc-status"
   | "home" | "home-active" | "home-incoming" | "home-offline"
   | "leads" | "lead-detail"
@@ -105,6 +106,7 @@ const SCREENS: ScreenDef[] = [
   { key: "account-type", title: "Account Type", section: "auth", path: "/account-type", Component: AccountTypePage },
   { key: "role", title: "Role Select", section: "auth", path: "/role", Component: RolePage },
   { key: "session-expired", title: "Session Expired", section: "auth", path: "/auth/session-expired", Component: SessionExpiredPage },
+  { key: "onboarding-expertise", title: "Expertise", section: "onboard", path: "/onboarding/expertise", Component: OnboardingExpertisePage },
   { key: "onboarding-personal", title: "Personal", section: "onboard", path: "/onboarding/personal", Component: OnboardingPersonalPage },
   { key: "onboarding-business", title: "Business", section: "onboard", path: "/onboarding/business", Component: OnboardingBusinessPage },
   { key: "onboarding-documents", title: "Documents", section: "onboard", path: "/onboarding/documents", Component: OnboardingDocumentsPage },

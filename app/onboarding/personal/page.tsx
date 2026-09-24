@@ -141,11 +141,11 @@ export default function PersonalInfoPage() {
       >
         Continue
       </a>
-      <AppBar back href="/role" title="Personal Details" />
+      <AppBar back href="/onboarding/expertise" title="Personal Details" />
 
       <div className="px-4 pt-4 pb-32">
         <OnboardingStepBar
-          current={3}
+          current={4}
           label="Personal Details"
           steps={getOnboardingSteps(accountType)}
         />

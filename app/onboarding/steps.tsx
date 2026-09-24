@@ -4,14 +4,16 @@ type Step = { label: string; href: string };
 
 const BASE_STEPS: Step[] = [
   { label: "Account Type", href: "/account-type" },
-  { label: "Expertise", href: "/role" },
+  { label: "Role", href: "/role" },
+  { label: "Expertise", href: "/onboarding/expertise" },
   { label: "Personal", href: "/onboarding/personal" },
   { label: "Documents", href: "/onboarding/documents" },
 ];
 
 const BUSINESS_STEPS: Step[] = [
   { label: "Account Type", href: "/account-type" },
-  { label: "Expertise", href: "/role" },
+  { label: "Role", href: "/role" },
+  { label: "Expertise", href: "/onboarding/expertise" },
   { label: "Personal", href: "/onboarding/personal" },
   { label: "Business", href: "/onboarding/business" },
   { label: "Documents", href: "/onboarding/documents" },

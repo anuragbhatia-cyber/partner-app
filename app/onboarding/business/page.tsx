@@ -105,7 +105,7 @@ export default function BusinessDetailsPage() {
 
       <div className="px-4 pt-4 pb-32">
         <OnboardingStepBar
-          current={4}
+          current={5}
           label="Business Details"
           steps={getOnboardingSteps(accountType ?? "business")}
         />
