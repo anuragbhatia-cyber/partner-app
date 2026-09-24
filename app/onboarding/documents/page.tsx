@@ -4,7 +4,6 @@ import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
 import { Button, Card } from "@/components/ui";
 import {
   ChevronRight,
-  Sparkles,
   Camera,
   Image as ImageIcon,
   X,
@@ -108,13 +107,6 @@ export default function DocumentsHubPage() {
             />
           ))}
         </div>
-
-        <Card className="mt-5 bg-[#FEF3C7]! border-transparent! shadow-none! flex items-start gap-2.5">
-          <Sparkles size={16} className="text-[#B45309] shrink-0 mt-0.5" />
-          <div className="t-body font-medium text-[#B45309] leading-relaxed">
-            Tip: Ensure good lighting and all corners are visible
-          </div>
-        </Card>
 
         <div className="space-y-3 mt-5">
           <ConsentRow
