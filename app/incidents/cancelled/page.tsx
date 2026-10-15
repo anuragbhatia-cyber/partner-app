@@ -4,16 +4,24 @@ import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
 import { Card, Chip, SectionLabel } from "@/components/ui";
 import {
   MoreVertical,
-  Phone,
   XCircle,
   IdCard,
   Car,
   Receipt,
   FileText,
   Eye,
+  MessageSquare,
+  Phone,
 } from "lucide-react";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { IncidentChatPanel } from "@/components/IncidentChatPanel";
+import {
+  IncidentHistoryPanel,
+  CANCELLED_CLOSING_EVENT,
+} from "@/components/IncidentHistoryPanel";
+
+type Tab = "details" | "chats" | "history";
 
 export default function IncidentCancelledPage() {
   return (
@@ -28,6 +36,7 @@ function IncidentCancelledView() {
   const caseId = params.get("id") || "IRN-100817";
   const reason =
     params.get("reason") || "Client no-show at pickup point";
+  const [tab, setTab] = useState<Tab>("details");
 
   return (
     <PhoneFrame label="Incident · Cancelled">
@@ -42,6 +51,29 @@ function IncidentCancelledView() {
         }
       />
 
+      <div className="px-4 pt-3 pb-3">
+        <div className="flex bg-neutral-100 rounded-xl p-1">
+          <TabButton active={tab === "details"} onClick={() => setTab("details")}>
+            Details
+          </TabButton>
+          <TabButton active={tab === "chats"} onClick={() => setTab("chats")}>
+            Chats
+          </TabButton>
+          <TabButton active={tab === "history"} onClick={() => setTab("history")}>
+            History
+          </TabButton>
+        </div>
+      </div>
+
+      {tab === "chats" ? (
+        <div className="flex-1 min-h-0 flex flex-col px-4 py-4">
+          <IncidentChatPanel caseId={caseId} mode="readOnly" />
+        </div>
+      ) : tab === "history" ? (
+        <div className="px-4 py-4 pb-8">
+          <IncidentHistoryPanel closingEvent={CANCELLED_CLOSING_EVENT} />
+        </div>
+      ) : (
       <div className="px-4 py-4 pb-8 space-y-4">
         {/* Status ribbon */}
         <div className="-mx-4 -mt-4 mb-4 px-4 py-3 bg-error-subtle border-b border-error/20 flex items-center">
@@ -98,9 +130,23 @@ function IncidentCancelledView() {
                 </div>
                 <div className="t-caption text-neutral-500">LLD-12121</div>
               </div>
-              <button className="w-9 h-9 rounded-full bg-success-subtle flex items-center justify-center text-success-bold">
-                <Phone size={14} />
-              </button>
+              <div className="shrink-0 flex items-center gap-1.5">
+                <button
+                  type="button"
+                  aria-label="View chat"
+                  onClick={() => setTab("chats")}
+                  className="w-10 h-10 rounded-full bg-primary-50 text-primary-700 hover:bg-primary-100 flex items-center justify-center"
+                >
+                  <MessageSquare size={18} />
+                </button>
+                <a
+                  href="tel:+911800123456"
+                  aria-label="Call support"
+                  className="w-10 h-10 rounded-full bg-success-subtle text-success-bold hover:bg-success/15 flex items-center justify-center"
+                >
+                  <Phone size={18} />
+                </a>
+              </div>
             </div>
           </Card>
         </div>
@@ -127,7 +173,32 @@ function IncidentCancelledView() {
           </Card>
         </div>
       </div>
+      )}
     </PhoneFrame>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex-1 h-10 rounded-lg t-body-sm font-semibold transition-all inline-flex items-center justify-center ${
+        active
+          ? "bg-white text-neutral-800 shadow-e1"
+          : "text-neutral-500 hover:text-neutral-700"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 

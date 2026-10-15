@@ -58,15 +58,15 @@ function CommissionSheet({
         }`}
       />
       <div
-        className={`absolute inset-x-0 bottom-0 bg-white rounded-t-2xl shadow-e3 transition-transform duration-300 ease-out ${
+        className={`absolute inset-x-0 bottom-0 bg-white rounded-t-2xl shadow-e3 transition-transform duration-300 ease-out flex flex-col max-h-[90%] ${
           open ? "translate-y-0" : "translate-y-full"
         }`}
       >
-        <div className="pt-2 pb-1 flex justify-center">
+        <div className="pt-2 pb-1 flex justify-center shrink-0">
           <span className="w-10 h-1 rounded-full bg-neutral-200" />
         </div>
 
-        <div className="px-4 pt-2 pb-2 flex items-start justify-between gap-3">
+        <div className="px-4 pt-2 pb-2 flex items-start justify-between gap-3 shrink-0">
           <div>
             <div className="t-h3 font-bold text-neutral-800">
               How commission works
@@ -82,7 +82,7 @@ function CommissionSheet({
           </button>
         </div>
 
-        <div className="px-4 py-3 space-y-2.5">
+        <div className="px-4 py-3 space-y-2.5 overflow-y-auto">
           <RateRow
             tone="case"
             label="Case"
@@ -118,7 +118,7 @@ function CommissionSheet({
           </ul>
         </div>
 
-        <div className="px-4 pt-2 pb-5 border-t border-[var(--border-subtle)]">
+        <div className="px-4 pt-3 pb-5 border-t border-[var(--border-subtle)] shrink-0 mt-auto">
           <Button variant="primary" size="lg" fullWidth onClick={onClose}>
             Got it
           </Button>

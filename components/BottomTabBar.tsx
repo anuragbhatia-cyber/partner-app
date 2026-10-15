@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Home, ClipboardList, User } from "lucide-react";
+import { Home, ClipboardList, MessageSquare, Inbox } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLeadsStore } from "@/lib/leads-store";
 
@@ -15,8 +15,9 @@ interface Tab {
 
 const BASE_TABS: Omit<Tab, "badge">[] = [
   { key: "home", label: "Home", href: "/home", icon: Home },
+  { key: "requests", label: "Assignments", href: "/leads", icon: Inbox },
+  { key: "chats", label: "Chats", href: "/chats", icon: MessageSquare },
   { key: "incidents", label: "Incidents", href: "/incidents", icon: ClipboardList },
-  { key: "profile", label: "Profile", href: "/profile", icon: User },
 ];
 
 function formatBadge(n: number): string {
@@ -29,11 +30,12 @@ export function BottomTabBar({ active }: { active: string }) {
   const { assigned } = useLeadsStore();
   const badges: Record<string, number> = {
     incidents: assigned.length,
+    chats: assigned.length,
   };
 
   return (
     <nav className="sticky bottom-0 z-30 bg-white border-t border-[var(--border-subtle)] mt-auto shadow-[0_-2px_6px_-2px_rgba(15,23,42,0.08)]">
-      <div className="grid grid-cols-3 h-20">
+      <div className="grid grid-cols-4 h-20">
         {BASE_TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = active === tab.key;
@@ -56,7 +58,7 @@ export function BottomTabBar({ active }: { active: string }) {
                 />
               )}
               <div className="relative">
-                <Icon size={28} />
+                <Icon size={22} />
                 {badgeLabel && (
                   <span
                     aria-label={`${badgeLabel} unread`}

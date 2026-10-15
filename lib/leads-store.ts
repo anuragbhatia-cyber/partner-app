@@ -5,19 +5,30 @@ import { useSyncExternalStore } from "react";
 export type LeadCategory = "case" | "challan" | "rto";
 export type LeadUrgency = "high" | "medium" | "low";
 
+export type LeadItem = {
+  incidentId: string;
+  challanNumber: string;
+  vehicleNumber: string;
+  state: string;
+  fineAmount: number;
+  tatDeadline: string;
+};
+
 export type Lead = {
   id: string;
   type: string;
   category: LeadCategory;
-  amount: number;
-  payoutRange?: [number, number];
-  distanceKm: number;
-  area: string;
+  itemLabel: string;
+  location: string;
+  earnings: number;
   postedMinAgo: number;
   urgency: LeadUrgency;
-  vehicle: string;
-  description: string;
+  items: LeadItem[];
 };
+
+export function leadTotalAmount(lead: Lead): number {
+  return lead.items.reduce((sum, item) => sum + item.fineAmount, 0);
+}
 
 export type IncidentStatus =
   | "ACCEPTED"
@@ -36,6 +47,7 @@ export type ActiveIncident = {
   category?: LeadCategory;
   amount?: number;
   area?: string;
+  batchId?: string;
   /** Millis · when the partner tapped Accept */
   assignedAt?: number;
   /** Millis · when the partner marked arrived on scene */
@@ -75,98 +87,111 @@ export function incidentElapsedMs(
 type State = {
   leads: Lead[];
   assigned: ActiveIncident[];
+  closed: ActiveIncident[];
 };
+
+function buildItems(
+  prefix: string,
+  state: string,
+  stateCode: string,
+  count: number,
+  fine: number,
+  tat: string
+): LeadItem[] {
+  return Array.from({ length: count }, (_, i) => {
+    const idx = i + 1;
+    const seq = String(idx).padStart(4, "0");
+    const vehSeq = String(1234 + i).padStart(4, "0");
+    const vehLetters = String.fromCharCode(65 + (i % 26)) +
+      String.fromCharCode(65 + ((i + 7) % 26));
+    return {
+      incidentId: `IRN-${prefix}${seq}`,
+      challanNumber: `${stateCode}01${2024}${String(700000 + i * 37 + idx).padStart(6, "0")}`,
+      vehicleNumber: `${stateCode}01${vehLetters}${vehSeq}`,
+      state,
+      fineAmount: fine,
+      tatDeadline: tat,
+    };
+  });
+}
 
 const SEED_LEADS: Lead[] = [
   {
-    id: "LEAD-2311",
-    type: "Traffic Challan",
+    id: "BATCH-2311",
+    type: "Traffic Challans",
     category: "challan",
-    amount: 500,
-    distanceKm: 3.2,
-    area: "MG Road",
+    itemLabel: "Challans",
+    location: "Mumbai, Maharashtra",
+    earnings: 500,
     postedMinAgo: 2,
     urgency: "high",
-    vehicle: "KA05MJ4421",
-    description:
-      "Running a red light at the intersection of MG Road and Brigade Road.",
+    items: buildItems("12", "Maharashtra", "MH", 10, 2500, "20 Aug 2026"),
   },
   {
-    id: "LEAD-2310",
-    type: "RTO Renewal",
-    category: "rto",
-    amount: 160,
-    payoutRange: [140, 180],
-    distanceKm: 5.8,
-    area: "Koramangala",
+    id: "BATCH-2310",
+    type: "Court Cases",
+    category: "case",
+    itemLabel: "Cases",
+    location: "Bengaluru, Karnataka",
+    earnings: 1200,
     postedMinAgo: 6,
     urgency: "medium",
-    vehicle: "KA03NP7788",
-    description: "RC renewal & fitness certificate at Koramangala RTO office.",
+    items: buildItems("13", "Karnataka", "KA", 12, 3500, "28 Aug 2026"),
   },
   {
-    id: "LEAD-2309",
-    type: "Accident Response",
-    category: "case",
-    amount: 900,
-    distanceKm: 1.4,
-    area: "HSR Layout",
+    id: "BATCH-2309",
+    type: "RTO Renewals",
+    category: "rto",
+    itemLabel: "RTO Tasks",
+    location: "HSR Layout, Bengaluru",
+    earnings: 320,
     postedMinAgo: 8,
     urgency: "high",
-    vehicle: "KA51AB1234",
-    description:
-      "Rear-end collision on the Outer Ring Road near HSR Layout junction.",
+    items: buildItems("14", "Karnataka", "KA", 6, 1800, "15 Aug 2026"),
   },
   {
-    id: "LEAD-2308",
-    type: "Vehicle Transfer",
-    category: "rto",
-    amount: 175,
-    payoutRange: [150, 200],
-    distanceKm: 4.6,
-    area: "Indiranagar",
+    id: "BATCH-2308",
+    type: "Traffic Challans",
+    category: "challan",
+    itemLabel: "Challans",
+    location: "Pune, Maharashtra",
+    earnings: 220,
     postedMinAgo: 14,
     urgency: "medium",
-    vehicle: "KA02CD5678",
-    description: "Ownership transfer documentation at Indiranagar RTO.",
+    items: buildItems("15", "Maharashtra", "MH", 4, 1500, "02 Sep 2026"),
   },
   {
-    id: "LEAD-2307",
-    type: "Challan Dispute",
-    category: "challan",
-    amount: 250,
-    distanceKm: 7.9,
-    area: "BTM Layout",
+    id: "BATCH-2307",
+    type: "Court Cases",
+    category: "case",
+    itemLabel: "Cases",
+    location: "BTM Layout, Bengaluru",
+    earnings: 650,
     postedMinAgo: 22,
     urgency: "low",
-    vehicle: "KA04EF9012",
-    description: "Overspeeding challan disputed — client requests review.",
+    items: buildItems("16", "Karnataka", "KA", 5, 2800, "10 Sep 2026"),
   },
   {
-    id: "LEAD-2306",
-    type: "Court Appearance",
+    id: "BATCH-2306",
+    type: "Court Cases",
     category: "case",
-    amount: 1500,
-    distanceKm: 2.1,
-    area: "Shivajinagar",
+    itemLabel: "Cases",
+    location: "Shivajinagar, Bengaluru",
+    earnings: 1800,
     postedMinAgo: 34,
     urgency: "high",
-    vehicle: "KA01GH3456",
-    description:
-      "Court appearance scheduled at City Civil Court for pending challan hearing.",
+    items: buildItems("17", "Karnataka", "KA", 15, 4000, "22 Aug 2026"),
   },
   {
-    id: "LEAD-2305",
-    type: "RC Renewal",
+    id: "BATCH-2305",
+    type: "RTO Renewals",
     category: "rto",
-    amount: 125,
-    payoutRange: [100, 150],
-    distanceKm: 6.4,
-    area: "Jayanagar",
+    itemLabel: "RTO Tasks",
+    location: "Jayanagar, Bengaluru",
+    earnings: 180,
     postedMinAgo: 51,
     urgency: "low",
-    vehicle: "KA06IJ7890",
-    description: "RC renewal for 2019 hatchback at Jayanagar RTO.",
+    items: buildItems("18", "Karnataka", "KA", 3, 1200, "18 Sep 2026"),
   },
 ];
 
@@ -179,6 +204,8 @@ const SEED_ASSIGNED: ActiveIncident[] = [
     status: "IN PROGRESS",
     deadlineDays: 2,
     category: "challan",
+    area: "Mumbai, Maharashtra",
+    batchId: "BATCH-2301",
   },
   {
     caseId: "IRN-100843",
@@ -188,6 +215,8 @@ const SEED_ASSIGNED: ActiveIncident[] = [
     status: "EN ROUTE",
     deadlineDays: 1,
     category: "case",
+    area: "Bengaluru, Karnataka",
+    batchId: "BATCH-2302",
   },
   {
     caseId: "IRN-100844",
@@ -197,6 +226,8 @@ const SEED_ASSIGNED: ActiveIncident[] = [
     status: "ARRIVED",
     deadlineDays: 5,
     category: "rto",
+    area: "Koramangala, Bengaluru",
+    batchId: "BATCH-2302",
   },
   {
     caseId: "IRN-100845",
@@ -206,10 +237,52 @@ const SEED_ASSIGNED: ActiveIncident[] = [
     status: "ACCEPTED",
     deadlineDays: 15,
     category: "case",
+    area: "Mumbai, Maharashtra",
+    batchId: "BATCH-2301",
   },
 ];
 
-let state: State = { leads: SEED_LEADS, assigned: SEED_ASSIGNED };
+const SEED_CLOSED: ActiveIncident[] = [
+  {
+    caseId: "IRN-100820",
+    vehicle: "MH012024789440",
+    description:
+      "Signal violation at Dadar junction — challan paid at the counter.",
+    status: "COMPLETED",
+    deadlineDays: 2,
+    category: "challan",
+    area: "Mumbai, Maharashtra",
+    batchId: "BATCH-2301",
+  },
+  {
+    caseId: "IRN-100830",
+    vehicle: "KA053021456789",
+    description:
+      "Court filing closed after the client settled with the complainant.",
+    status: "COMPLETED",
+    deadlineDays: 3,
+    category: "case",
+    area: "Bengaluru, Karnataka",
+    batchId: "BATCH-2302",
+  },
+  {
+    caseId: "IRN-100831",
+    vehicle: "KA053021456790",
+    description:
+      "Client no-show at the pickup point. Case cancelled per policy.",
+    status: "CANCELLED",
+    deadlineDays: 5,
+    category: "rto",
+    area: "Koramangala, Bengaluru",
+    batchId: "BATCH-2302",
+  },
+];
+
+let state: State = {
+  leads: SEED_LEADS,
+  assigned: SEED_ASSIGNED,
+  closed: SEED_CLOSED,
+};
 const listeners = new Set<() => void>();
 
 const emit = () => listeners.forEach((fn) => fn());
@@ -252,18 +325,21 @@ export function useLeadsStore(): State {
 export function assignLead(id: string) {
   const lead = state.leads.find((l) => l.id === id);
   if (!lead) return;
+  const first = lead.items[0];
   const incident: ActiveIncident = {
     caseId: nextIrn(),
-    vehicle: lead.vehicle,
-    description: lead.description,
+    vehicle: first?.vehicleNumber ?? "",
+    description: `${lead.items.length} ${lead.itemLabel} · ${lead.location}`,
     status: "ACCEPTED",
     deadlineDays: lead.urgency === "high" ? 2 : lead.urgency === "medium" ? 5 : 10,
     category: lead.category,
-    amount: lead.amount,
-    area: lead.area,
+    amount: leadTotalAmount(lead),
+    area: lead.location,
+    batchId: lead.id,
     assignedAt: Date.now(),
   };
   state = {
+    ...state,
     leads: state.leads.filter((l) => l.id !== id),
     assigned: [incident, ...state.assigned],
   };

@@ -3,11 +3,11 @@
 import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
 import { BottomTabBar } from "@/components/BottomTabBar";
 import { CommissionCard } from "@/components/CommissionCard";
-import { Button, Chip } from "@/components/ui";
-import { MapPin, IndianRupee, Clock, Inbox } from "lucide-react";
+import { Chip } from "@/components/ui";
+import { MapPin, Clock, Inbox, ChevronRight, Check } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   assignLead,
   CATEGORY_LABELS,
@@ -15,7 +15,6 @@ import {
   Lead,
   LeadCategory,
   LeadUrgency,
-  skipLead,
   useLeadsStore,
 } from "@/lib/leads-store";
 
@@ -26,10 +25,6 @@ const urgencyDeadline: Record<LeadUrgency, string> = {
 };
 
 type Filter = "all" | LeadCategory;
-
-function fmtAmount(n: number) {
-  return `₹${n.toLocaleString("en-IN")}`;
-}
 
 function fmtTime(min: number) {
   if (min < 1) return "just now";
@@ -57,7 +52,6 @@ export default function LeadsPage() {
   }, [leads]);
 
   const filtered = filter === "all" ? leads : leads.filter((l) => l.category === filter);
-  const totalValue = filtered.reduce((sum, l) => sum + l.amount, 0);
 
   const handleAssign = (lead: Lead) => {
     assignLead(lead.id);
@@ -65,9 +59,9 @@ export default function LeadsPage() {
   };
 
   return (
-    <PhoneFrame label="Leads">
+    <PhoneFrame label="Assignments">
       <AppBar
-        title="Leads"
+        title="Assignments"
         action={
           <span className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full bg-success-subtle">
             <span className="relative flex h-2 w-2">
@@ -84,15 +78,15 @@ export default function LeadsPage() {
       <div className="px-4 pt-4 pb-3 space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-xl bg-white border border-[var(--border-default)] shadow-e1 px-3 py-3">
-            <div className="t-body-sm font-semibold text-neutral-700">Open leads</div>
-            <div className="t-h1 font-bold tabular text-neutral-900 mt-0.5">
+            <div className="t-body-sm font-semibold text-neutral-700">Open to assign</div>
+            <div className="t-h1 font-bold tabular text-primary-600 mt-0.5">
               {filtered.length}
             </div>
           </div>
           <div className="rounded-xl bg-white border border-[var(--border-default)] shadow-e1 px-3 py-3">
-            <div className="t-body-sm font-semibold text-neutral-700">Total value</div>
-            <div className="t-h1 font-bold tabular text-success-bold mt-0.5">
-              {fmtAmount(totalValue)}
+            <div className="t-body-sm font-semibold text-neutral-700">Total batches</div>
+            <div className="t-h1 font-bold tabular text-primary-600 mt-0.5">
+              {filtered.length}
             </div>
           </div>
         </div>
@@ -127,7 +121,7 @@ export default function LeadsPage() {
         )}
       </div>
 
-      <BottomTabBar active="leads" />
+      <BottomTabBar active="requests" />
     </PhoneFrame>
   );
 }
@@ -176,10 +170,13 @@ function LeadCard({ lead, onAssign }: { lead: Lead; onAssign: () => void }) {
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="t-body-lg font-semibold text-neutral-900 truncate">
-              {lead.type}
+            <div className="t-body-lg font-semibold text-neutral-900">
+              {lead.id}
             </div>
-            <div className="t-caption text-neutral-500 mt-0.5">{lead.id}</div>
+            <div className="mt-0.5 inline-flex items-center gap-1 t-body-sm text-neutral-600 min-w-0">
+              <MapPin size={13} className="text-neutral-500 shrink-0" />
+              <span className="truncate">{lead.location}</span>
+            </div>
           </div>
           <div className="flex items-center gap-4 shrink-0">
             <Chip tone={CATEGORY_TONE[lead.category]} size="sm">
@@ -191,42 +188,30 @@ function LeadCard({ lead, onAssign }: { lead: Lead; onAssign: () => void }) {
           </div>
         </div>
 
-        <p className="t-body-sm text-neutral-700 mt-2 line-clamp-2">
-          {lead.description}
-        </p>
-
-        <div className="mt-3 flex items-end justify-between gap-3">
-          <div className="min-w-0">
-            <div className="t-h1 font-extrabold tabular text-success-bold inline-flex items-center leading-none">
-              <IndianRupee size={20} className="mr-0.5" />
-              {lead.payoutRange
-                ? `${lead.payoutRange[0].toLocaleString("en-IN")} – ₹${lead.payoutRange[1].toLocaleString("en-IN")}`
-                : lead.amount.toLocaleString("en-IN")}
+        <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
+          <div>
+            <div className="t-caption text-neutral-500">Earnings</div>
+            <div className="mt-0.5 t-body-lg font-semibold text-success-bold leading-none">
+              In progress
             </div>
           </div>
-          <div className="text-right shrink-0 space-y-1">
-            <div className="inline-flex items-center gap-1 t-body-sm font-semibold text-neutral-800">
-              <MapPin size={13} className="text-neutral-500" />
-              {lead.distanceKm} km
+          <div>
+            <div className="t-caption text-neutral-500">
+              Number of {lead.itemLabel.toLowerCase()}
             </div>
-            <div className="t-caption text-neutral-500">{lead.area}</div>
+            <div className="mt-0.5 t-h2 font-extrabold tabular text-neutral-800 leading-none">
+              {lead.items.length}
+            </div>
           </div>
         </div>
       </Link>
 
-      <div className="px-4 pt-3 pb-4 border-t border-[var(--border-subtle)] flex items-center justify-between gap-3">
+      <div className="px-4 pt-3 pb-4 border-t border-[var(--border-subtle)] flex flex-col gap-3">
         <div className="inline-flex items-center gap-1 t-caption text-neutral-500">
           <Clock size={12} />
           {fmtTime(lead.postedMinAgo)}
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm" onClick={() => skipLead(lead.id)}>
-            Skip
-          </Button>
-          <Button variant="primary" size="sm" onClick={onAssign}>
-            Assign to me
-          </Button>
-        </div>
+        <SwipeToAccept onConfirm={onAssign} />
       </div>
     </div>
   );
@@ -249,13 +234,13 @@ function LeadsEmpty({
   if (noneAtAll) {
     title = "You're all caught up";
     subtitle =
-      "No open leads in your area right now. New ones land here in real time.";
+      "No open assignments in your area right now. New ones land here in real time.";
   } else if (isFiltered) {
-    title = `No open ${label} leads`;
+    title = `No open ${label} assignments`;
     subtitle = "Try another category or check back in a few minutes.";
   } else {
-    title = "No open leads right now";
-    subtitle = "New leads land here as they come in.";
+    title = "No open assignments right now";
+    subtitle = "New assignments land here as they come in.";
   }
 
   return (
@@ -276,6 +261,104 @@ function LeadsEmpty({
           Show all
         </button>
       )}
+    </div>
+  );
+}
+
+function SwipeToAccept({ onConfirm }: { onConfirm: () => void }) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [x, setX] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const startRef = useRef(0);
+  const maxRef = useRef(0);
+  const xRef = useRef(0);
+
+  const THUMB = 36;
+  const PAD = 4;
+
+  const measure = () => {
+    const w = trackRef.current?.offsetWidth ?? 0;
+    maxRef.current = Math.max(0, w - THUMB - PAD * 2);
+  };
+
+  const handleDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (confirmed) return;
+    measure();
+    setDragging(true);
+    startRef.current = e.clientX - xRef.current;
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const handleMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (!dragging) return;
+    const nx = Math.max(
+      0,
+      Math.min(maxRef.current, e.clientX - startRef.current)
+    );
+    xRef.current = nx;
+    setX(nx);
+  };
+
+  const handleUp = () => {
+    if (!dragging) return;
+    setDragging(false);
+    if (xRef.current >= maxRef.current * 0.8 && maxRef.current > 0) {
+      xRef.current = maxRef.current;
+      setX(maxRef.current);
+      setConfirmed(true);
+      window.setTimeout(onConfirm, 220);
+    } else {
+      xRef.current = 0;
+      setX(0);
+    }
+  };
+
+  const progress = maxRef.current > 0 ? x / maxRef.current : 0;
+  const fillWidth = PAD + THUMB / 2 + x + THUMB / 2;
+
+  return (
+    <div
+      ref={trackRef}
+      className="relative h-11 w-full rounded-full bg-primary-50 border border-primary-100 overflow-hidden select-none"
+      aria-label="Swipe to accept"
+    >
+      <div
+        className="absolute inset-y-0 left-0 bg-primary-600"
+        style={{
+          width: `${fillWidth}px`,
+          transition: dragging ? "none" : "width 180ms ease-out",
+        }}
+      />
+      <span
+        className="absolute inset-0 flex items-center justify-center t-body-sm font-semibold text-primary-700 pointer-events-none"
+        style={{ opacity: Math.max(0, 1 - progress * 1.4) }}
+      >
+        Swipe to accept
+      </span>
+      <span
+        className="absolute inset-0 flex items-center justify-center t-body-sm font-semibold text-white pointer-events-none"
+        style={{ opacity: Math.min(1, progress * 1.4) }}
+      >
+        {confirmed ? "Assigned" : "Release to accept"}
+      </span>
+      <button
+        type="button"
+        onPointerDown={handleDown}
+        onPointerMove={handleMove}
+        onPointerUp={handleUp}
+        onPointerCancel={handleUp}
+        aria-label="Swipe thumb"
+        disabled={confirmed}
+        style={{
+          transform: `translate3d(${x}px, 0, 0)`,
+          transition: dragging ? "none" : "transform 180ms ease-out",
+          touchAction: "pan-y",
+        }}
+        className="absolute top-1 left-1 h-9 w-9 rounded-full bg-white shadow-e1 flex items-center justify-center text-primary-700 cursor-grab active:cursor-grabbing"
+      >
+        {confirmed ? <Check size={18} /> : <ChevronRight size={18} />}
+      </button>
     </div>
   );
 }

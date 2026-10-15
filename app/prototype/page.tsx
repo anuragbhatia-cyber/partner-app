@@ -22,11 +22,13 @@ import {
   Users,
   X,
   Menu,
+  MessageSquare,
   Sparkles,
 } from "lucide-react";
 import { PhoneShell, PhoneFrameProvider } from "@/components/PhoneFrame";
 import { cn } from "@/lib/utils";
 import { setPreviewLeadId } from "@/lib/leads-store";
+import { requestOpenChatOnIncident } from "@/lib/chat-nav";
 
 /* Import every screen. Nested PhoneFrames in each page become no-op
    because PhoneShell puts them inside PhoneFrameProvider (context flag). */
@@ -46,6 +48,7 @@ import HomeIncomingPage from "@/app/home/incoming/page";
 import HomeOfflinePage from "@/app/home/offline/page";
 import IncidentsPage from "@/app/incidents/page";
 import LeadsPage from "@/app/leads/page";
+import ChatsPage from "@/app/chats/page";
 import LeadDetailPage from "@/app/leads/[id]/page";
 import TeamsPage from "@/app/teams/page";
 import AiExpertPage from "@/app/ai/page";
@@ -71,7 +74,8 @@ import ProfileProfessionalPage from "@/app/profile/professional/page";
 import ProfileBankPage from "@/app/profile/bank/page";
 import ProfileLanguagesPage from "@/app/profile/languages/page";
 import ProfileSupportChatPage from "@/app/profile/support/chat/page";
-import ProfileSupportFaqPage from "@/app/profile/support/faq/[topic]/page";
+import ProfileSupportFaqPaymentPage from "@/app/profile/support/faq/payment/page";
+import ProfileSupportFaqCasesPage from "@/app/profile/support/faq/cases/page";
 
 type ScreenKey =
   | "splash" | "account-type" | "role" | "otp" | "session-expired"
@@ -79,6 +83,7 @@ type ScreenKey =
   | "onboarding-kyc-status"
   | "home" | "home-active" | "home-incoming" | "home-offline"
   | "leads" | "lead-detail"
+  | "chats"
   | "teams"
   | "ai"
   | "knowledge"
@@ -87,7 +92,7 @@ type ScreenKey =
   | "wallet" | "wallet-transactions" | "wallet-payout"
   | "notifications"
   | "profile" | "profile-availability" | "profile-documents"
-  | "profile-support" | "profile-support-chat" | "profile-support-faq"
+  | "profile-support" | "profile-support-chat" | "profile-support-faq-payment" | "profile-support-faq-cases"
   | "profile-settings"
   | "profile-personal-info" | "profile-professional"
   | "profile-bank" | "profile-languages";
@@ -115,8 +120,9 @@ const SCREENS: ScreenDef[] = [
   { key: "home-active", title: "Home · Active", section: "home", path: "/home/active", Component: HomeActivePage },
   { key: "home-incoming", title: "Incoming ⚡", section: "home", path: "/home/incoming", Component: HomeIncomingPage },
   { key: "home-offline", title: "Home · Offline", section: "home", path: "/home/offline", Component: HomeOfflinePage },
-  { key: "leads", title: "Leads", section: "leads", path: "/leads", Component: LeadsPage },
-  { key: "lead-detail", title: "Lead Detail", section: "leads", path: "/leads/detail", Component: LeadDetailPage },
+  { key: "leads", title: "Assignments", section: "leads", path: "/leads", Component: LeadsPage },
+  { key: "lead-detail", title: "Assignment Detail", section: "leads", path: "/leads/detail", Component: LeadDetailPage },
+  { key: "chats", title: "Chats", section: "chats", path: "/chats", Component: ChatsPage },
   { key: "teams", title: "My Team", section: "home", path: "/teams", Component: TeamsPage },
   { key: "ai", title: "AI Expert", section: "home", path: "/ai", Component: AiExpertPage },
   { key: "knowledge", title: "Knowledge Base", section: "home", path: "/knowledge", Component: KnowledgeBasePage },
@@ -141,7 +147,8 @@ const SCREENS: ScreenDef[] = [
   { key: "profile-availability", title: "Availability", section: "profile", path: "/profile/availability", Component: ProfileAvailabilityPage },
   { key: "profile-support", title: "Support", section: "profile", path: "/profile/support", Component: ProfileSupportPage },
   { key: "profile-support-chat", title: "Support · Chat", section: "profile", path: "/profile/support/chat", Component: ProfileSupportChatPage },
-  { key: "profile-support-faq", title: "Support · Payment FAQ", section: "profile", path: "/profile/support/faq/payment", Component: ProfileSupportFaqPage },
+  { key: "profile-support-faq-payment", title: "Support · Payment FAQ", section: "profile", path: "/profile/support/faq/payment", Component: ProfileSupportFaqPaymentPage },
+  { key: "profile-support-faq-cases", title: "Support · Cases FAQ", section: "profile", path: "/profile/support/faq/cases", Component: ProfileSupportFaqCasesPage },
   { key: "profile-settings", title: "Settings", section: "profile", path: "/profile/settings", Component: ProfileSettingsPage },
 ];
 
@@ -149,7 +156,8 @@ const SECTIONS = [
   { key: "auth", title: "Auth", icon: UserPlus },
   { key: "onboard", title: "Onboarding", icon: UserPlus },
   { key: "home", title: "Home", icon: HomeIcon },
-  { key: "leads", title: "Leads", icon: Users },
+  { key: "leads", title: "Assignments", icon: Users },
+  { key: "chats", title: "Chats", icon: MessageSquare },
   { key: "incidents", title: "Incidents", icon: ClipboardList },
   { key: "wallet", title: "Wallet", icon: WalletIcon },
   { key: "notifications", title: "Alerts", icon: Bell },
@@ -236,6 +244,13 @@ export default function PrototypePlayer() {
         e.preventDefault();
         setPreviewLeadId(decodeURIComponent(leadMatch[1]));
         navigate("lead-detail");
+        return;
+      }
+      const chatMatch = href.match(/^\/chats\/([^/]+)\/open$/);
+      if (chatMatch) {
+        e.preventDefault();
+        requestOpenChatOnIncident(decodeURIComponent(chatMatch[1]));
+        navigate("incidents-active");
         return;
       }
       const pathname = href.split("?")[0].split("#")[0];

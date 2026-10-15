@@ -243,9 +243,13 @@ export default function HomeIdlePage() {
       {/* Dark hero section — wraps app bar + earnings card */}
       <section className="bg-black rounded-b-3xl pb-5">
         <header className="px-4 min-h-16 py-3 flex items-center gap-3">
-          <div className="w-11 h-11 rounded-full bg-neutral-900 shrink-0 ring-2 ring-white/20 flex items-center justify-center text-white t-body-lg font-semibold">
+          <Link
+            href="/profile"
+            aria-label="Open profile"
+            className="w-11 h-11 rounded-full bg-neutral-900 shrink-0 ring-2 ring-white/20 flex items-center justify-center text-white t-body-lg font-semibold hover:ring-white/40 transition-shadow"
+          >
             P
-          </div>
+          </Link>
           <div className="flex-1 min-w-0">
             <div className="t-body-lg font-semibold text-white truncate leading-tight">
               Hi Priya
@@ -696,11 +700,6 @@ function LocationPickerSheet({
             <div className="t-h3 font-bold text-neutral-800">
               Working areas
             </div>
-            <div className="t-caption text-neutral-700 mt-0.5">
-              {selectedIds.length > 0
-                ? `${selectedIds.length} selected · you'll only receive cases from these`
-                : "Pick one or more · you'll only receive cases from these"}
-            </div>
           </div>
           <button
             type="button"
@@ -928,8 +927,8 @@ function TodayEmpty({
       </h3>
       <p className="t-body-sm text-neutral-500 mt-1 max-w-[260px] mx-auto">
         {isFiltered
-          ? "Try another category or browse open leads in your area."
-          : "New cases will land here as they come in. In the meantime, check the live leads."}
+          ? "Try another category or browse open assignments in your area."
+          : "New cases will land here as they come in. In the meantime, check the live assignments."}
       </p>
       <div className="mt-4 flex items-center justify-center gap-2">
         {isFiltered && (
@@ -945,7 +944,7 @@ function TodayEmpty({
           href="/leads"
           className="h-9 px-3.5 inline-flex items-center gap-1 rounded-full bg-primary-600 text-white t-body-sm font-semibold hover:bg-primary-700"
         >
-          Browse leads
+          Browse assignments
           <ChevronRight size={14} />
         </Link>
       </div>

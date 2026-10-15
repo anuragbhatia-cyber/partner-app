@@ -224,10 +224,10 @@ export default function OTPPage() {
             onClick={handleRequestCode}
           >
             {sending
-              ? "Sending code…"
+              ? "Sending OTP…"
               : isReturning
                 ? "Sign in with OTP"
-                : "Request Code"}
+                : "Send OTP"}
           </Button>
 
           <button

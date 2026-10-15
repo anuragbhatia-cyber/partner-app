@@ -17,7 +17,7 @@ const OPTIONS = [
 ];
 
 export default function ProfileLanguagesPage() {
-  const [spoken, setSpoken] = useState<string[]>(["en", "hi", "kn"]);
+  const [spoken, setSpoken] = useState<string[]>([]);
 
   const toggle = (code: string) => {
     setSpoken((prev) =>

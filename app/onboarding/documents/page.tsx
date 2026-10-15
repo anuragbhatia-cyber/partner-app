@@ -57,8 +57,7 @@ export default function DocumentsHubPage() {
     ? docs
     : docs.filter((d) => d.key !== "bar");
 
-  const backHref =
-    accountType === "business" ? "/onboarding/business" : "/onboarding/personal";
+  const backHref = "/onboarding/personal";
   const steps = getOnboardingSteps(accountType);
 
   const activeDoc = visibleDocs.find((d) => d.key === active) ?? null;

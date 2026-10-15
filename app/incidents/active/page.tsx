@@ -9,16 +9,12 @@ import {
 } from "@/components/ui";
 import {
   MoreVertical,
-  Phone,
-  ChevronRight,
-  Plus,
   FileText,
   Users,
   Check,
   X,
   Receipt,
   ShieldCheck,
-  CheckCircle2,
   Search,
   IdCard,
   Car,
@@ -28,19 +24,49 @@ import {
   Send,
   AlertTriangle,
   Eye,
+  MessageSquare,
+  Phone,
+  ChevronDown,
+  ListChecks,
+  PhoneIncoming,
+  PhoneOutgoing,
+  PhoneMissed,
+  PhoneCall,
 } from "lucide-react";
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { CompleteCaseSheet } from "@/components/CompleteCaseSheet";
+import { IncidentChatPanel } from "@/components/IncidentChatPanel";
+import { IncidentHistoryPanel } from "@/components/IncidentHistoryPanel";
+import { peekRecentOpenChatRequest } from "@/lib/chat-nav";
 
-type Tab = "details" | "notes";
+type Tab = "details" | "chats" | "calls" | "history";
 
 export default function IncidentActivePage() {
-  const [tab, setTab] = useState<Tab>("details");
+  const openChatOnMount = peekRecentOpenChatRequest() !== null;
+  const [tab, setTab] = useState<Tab>(openChatOnMount ? "chats" : "details");
+  const [unreadChats, setUnreadChats] = useState(openChatOnMount ? 0 : 2);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
   const [assignedTo, setAssignedTo] = useState<TeamMember | null>(null);
   const [docsOpen, setDocsOpen] = useState(false);
   const [requestedDocs, setRequestedDocs] = useState<string[]>([]);
+  const [stageHistory, setStageHistory] = useState<StageEntry[]>([
+    { stage: PROGRESS_STAGES[0], time: "12 Oct" },
+  ]);
+  const stage = stageHistory[stageHistory.length - 1].stage;
+  const setStage = (newStage: ProgressStage) => {
+    const currIdx = PROGRESS_STAGES.indexOf(stage);
+    const nextIdx = PROGRESS_STAGES.indexOf(newStage);
+    if (nextIdx === currIdx) return;
+    if (nextIdx > currIdx) {
+      const additions = PROGRESS_STAGES.slice(currIdx + 1, nextIdx + 1).map(
+        (s) => ({ stage: s, time: nowLabel() })
+      );
+      setStageHistory((h) => [...h, ...additions]);
+    } else {
+      setStageHistory((h) => h.slice(0, nextIdx + 1));
+    }
+  };
   const [toast, setToast] = useState<string | null>(null);
   const [cancelSheetOpen, setCancelSheetOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
@@ -90,47 +116,89 @@ export default function IncidentActivePage() {
           <TabButton active={tab === "details"} onClick={() => setTab("details")}>
             Details
           </TabButton>
-          <TabButton active={tab === "notes"} onClick={() => setTab("notes")}>
-            Notes
+          <TabButton
+            active={tab === "chats"}
+            onClick={() => {
+              setTab("chats");
+              setUnreadChats(0);
+            }}
+          >
+            <span className="inline-flex items-center gap-1.5">
+              Chats
+              {unreadChats > 0 && (
+                <span className="min-w-[18px] h-[18px] px-1.5 inline-flex items-center justify-center rounded-full bg-error text-white t-micro font-semibold tabular">
+                  {unreadChats}
+                </span>
+              )}
+            </span>
+          </TabButton>
+          <TabButton active={tab === "calls"} onClick={() => setTab("calls")}>
+            Calls
+          </TabButton>
+          <TabButton active={tab === "history"} onClick={() => setTab("history")}>
+            History
           </TabButton>
         </div>
       </div>
 
-      <div className="px-4 py-4 pb-32 space-y-4">
-        {tab === "details" ? (
+      {tab === "details" && (
+        <div className="px-4 py-4 pb-32 space-y-4">
           <DetailsPanel
             assignedTo={assignedTo}
             requestedDocs={requestedDocs}
+            stage={stage}
+            stageHistory={stageHistory}
+            onStageChange={setStage}
             onOpenAssign={() => setAssignOpen(true)}
             onOpenDocs={() => setDocsOpen(true)}
+            onOpenChat={() => {
+              setTab("chats");
+              setUnreadChats(0);
+            }}
           />
-        ) : (
-          <NotesPanel />
-        )}
-      </div>
+        </div>
+      )}
+      {tab === "chats" && (
+        <div className="flex-1 min-h-0 flex flex-col px-4 py-4">
+          <IncidentChatPanel caseId="IRN-100842" mode="active" />
+        </div>
+      )}
+      {tab === "calls" && (
+        <div className="px-4 py-4 pb-24">
+          <IncidentCallsPanel />
+        </div>
+      )}
+      {tab === "history" && (
+        <div className="px-4 py-4 pb-24">
+          <IncidentHistoryPanel />
+        </div>
+      )}
 
-      <div className="sticky bottom-0 z-20 mt-auto bg-white border-t border-[var(--border-subtle)] px-4 pt-3 pb-4 space-y-2">
-        <Button
-          variant="primary"
-          size="lg"
-          fullWidth
-          onClick={() => setSheetOpen(true)}
-        >
-          Mark Complete
-        </Button>
-        <Button
-          variant="secondary"
-          size="lg"
-          fullWidth
-          onClick={() => setCancelSheetOpen(true)}
-        >
-          Not Completed
-        </Button>
-      </div>
+      {tab === "details" && (
+        <div className="sticky bottom-0 z-20 mt-auto bg-white border-t border-[var(--border-subtle)] px-4 pt-3 pb-4 space-y-2">
+          <Button
+            variant="primary"
+            size="lg"
+            fullWidth
+            onClick={() => setSheetOpen(true)}
+          >
+            Mark Complete
+          </Button>
+          <Button
+            variant="secondary"
+            size="lg"
+            fullWidth
+            onClick={() => setCancelSheetOpen(true)}
+          >
+            Not Completed
+          </Button>
+        </div>
+      )}
 
-      <CompleteUploadSheet
+      <CompleteCaseSheet
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
+        caseId="IRN-100842"
       />
 
       <NotCompletedSheet
@@ -214,13 +282,21 @@ function TabButton({
 function DetailsPanel({
   assignedTo,
   requestedDocs,
+  stage,
+  stageHistory,
+  onStageChange,
   onOpenAssign,
   onOpenDocs,
+  onOpenChat,
 }: {
   assignedTo: TeamMember | null;
   requestedDocs: string[];
+  stage: ProgressStage;
+  stageHistory: StageEntry[];
+  onStageChange: (s: ProgressStage) => void;
   onOpenAssign: () => void;
   onOpenDocs: () => void;
+  onOpenChat: () => void;
 }) {
   return (
     <>
@@ -271,9 +347,23 @@ function DetailsPanel({
               </div>
               <div className="t-caption text-neutral-500">LLD-12121</div>
             </div>
-            <button className="w-9 h-9 rounded-full bg-success-subtle flex items-center justify-center text-success-bold">
-              <Phone size={14} />
-            </button>
+            <div className="shrink-0 flex items-center gap-1.5">
+              <button
+                type="button"
+                aria-label="Chat with support about this incident"
+                onClick={onOpenChat}
+                className="w-10 h-10 rounded-full bg-primary-50 text-primary-700 hover:bg-primary-100 flex items-center justify-center"
+              >
+                <MessageSquare size={18} />
+              </button>
+              <a
+                href="tel:+911800123456"
+                aria-label="Call support"
+                className="w-10 h-10 rounded-full bg-success-subtle text-success-bold hover:bg-success/15 flex items-center justify-center"
+              >
+                <Phone size={18} />
+              </a>
+            </div>
           </div>
         </Card>
       </div>
@@ -285,6 +375,9 @@ function DetailsPanel({
           <TimelineWithActions
             assignedTo={assignedTo}
             requestedDocs={requestedDocs}
+            stage={stage}
+            stageHistory={stageHistory}
+            onStageChange={onStageChange}
             onOpenAssign={onOpenAssign}
             onOpenDocs={onOpenDocs}
           />
@@ -375,101 +468,6 @@ function DocumentAttachmentRow({ doc }: { doc: RequestedDocAttachment }) {
   );
 }
 
-function NotesPanel() {
-  const [notes, setNotes] = useState([
-    {
-      id: "n1",
-      time: "10:42",
-      body: "Client has previous challan history, will need to fetch records from RTO before filing dispute.",
-    },
-    {
-      id: "n2",
-      time: "10:38",
-      body: "Arrived at MG Road; parking taken care of. Client waiting near metro exit.",
-    },
-  ]);
-  const [draft, setDraft] = useState("");
-
-  const wordCount = (s: string) =>
-    s.trim().split(/\s+/).filter(Boolean).length;
-
-  const addNote = () => {
-    const body = draft.trim();
-    if (!body) return;
-    const now = new Date();
-    const hh = now.getHours().toString().padStart(2, "0");
-    const mm = now.getMinutes().toString().padStart(2, "0");
-    setNotes((prev) => [
-      { id: `n${prev.length + 1}`, time: `${hh}:${mm}`, body },
-      ...prev,
-    ]);
-    setDraft("");
-  };
-
-  return (
-    <>
-      <div>
-        <SectionLabel className="mb-2">Add a note</SectionLabel>
-        <Card padding="md">
-          <textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="Capture what you saw or agreed with the client…"
-            rows={4}
-            className="w-full t-body text-neutral-800 placeholder:text-neutral-400 resize-none bg-transparent focus:outline-none"
-          />
-          <div className="flex items-center justify-between pt-2 border-t border-[var(--border-subtle)]">
-            <span className="t-caption text-neutral-500">
-              {wordCount(draft)} word{wordCount(draft) === 1 ? "" : "s"}
-            </span>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={addNote}
-              disabled={!draft.trim()}
-              leftIcon={<Plus size={14} />}
-            >
-              Save note
-            </Button>
-          </div>
-        </Card>
-      </div>
-
-      <div>
-        <SectionLabel className="mb-2">History ({notes.length})</SectionLabel>
-        <div className="space-y-2">
-          {notes.map((n) => (
-            <Card key={n.id}>
-              <div className="t-body-sm text-neutral-700 leading-relaxed">
-                {n.body}
-              </div>
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-[var(--border-subtle)]">
-                <span className="t-caption text-neutral-500">
-                  {n.time} · {wordCount(n.body)} words
-                </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setNotes((prev) => prev.filter((x) => x.id !== n.id))
-                  }
-                  className="t-caption font-semibold text-neutral-500 hover:text-error-bold"
-                >
-                  Delete
-                </button>
-              </div>
-            </Card>
-          ))}
-          {notes.length === 0 && (
-            <Card padding="lg" className="text-center">
-              <div className="t-body-sm text-neutral-400">No notes yet</div>
-            </Card>
-          )}
-        </div>
-      </div>
-    </>
-  );
-}
-
 function Field({
   label,
   value,
@@ -520,33 +518,33 @@ function StepDot({ status }: { status: StepStatus }) {
 function TimelineWithActions({
   assignedTo,
   requestedDocs,
+  stage,
+  stageHistory,
+  onStageChange,
   onOpenAssign,
   onOpenDocs,
 }: {
   assignedTo: TeamMember | null;
   requestedDocs: string[];
+  stage: ProgressStage;
+  stageHistory: StageEntry[];
+  onStageChange: (s: ProgressStage) => void;
   onOpenAssign: () => void;
   onOpenDocs: () => void;
 }) {
   return (
     <div>
-      <TimelineRow status="done" label="Accepted" time="10:24" connectorClass="bg-success" />
+      <TimelineRow status="done" label="Accepted" time="11 Oct" connectorClass="bg-success" />
 
       <TimelineRow
         status="current"
         label="In progress"
-        time="10:41"
+        time={stageHistory[0]?.time ?? "12 Oct"}
         connectorClass="bg-neutral-200"
       >
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            leftIcon={<FileText size={14} />}
-            onClick={onOpenDocs}
-          >
-            Request Documents
-          </Button>
+        <SubStageTimeline history={stageHistory} />
+        <StageStepper value={stage} onChange={onStageChange} />
+        <div className="mt-2 flex flex-wrap gap-2">
           <Button
             variant="secondary"
             size="sm"
@@ -556,25 +554,183 @@ function TimelineWithActions({
             Assign to Team
           </Button>
         </div>
-        {(assignedTo || requestedDocs.length > 0) && (
+        {assignedTo && (
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {assignedTo && (
-              <div className="inline-flex items-center gap-2 h-8 px-2.5 rounded-full bg-primary-50 text-primary-700 t-caption font-semibold">
-                <Users size={12} />
-                Assigned to {assignedTo.name}
-              </div>
-            )}
-            {requestedDocs.length > 0 && (
-              <div className="inline-flex items-center gap-2 h-8 px-2.5 rounded-full bg-info-subtle text-info-bold t-caption font-semibold">
-                <FileText size={12} />
-                {requestedDocs.length} doc{requestedDocs.length === 1 ? "" : "s"} requested
-              </div>
-            )}
+            <div className="inline-flex items-center gap-2 h-8 px-2.5 rounded-full bg-primary-50 text-primary-700 t-caption font-semibold">
+              <Users size={12} />
+              Assigned to {assignedTo.name}
+            </div>
           </div>
         )}
       </TimelineRow>
 
       <TimelineRow status="pending" label="Completion" isLast />
+    </div>
+  );
+}
+
+type StageEntry = { stage: ProgressStage; time: string };
+
+function nowLabel(): string {
+  const d = new Date();
+  const months = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  ];
+  return `${d.getDate()} ${months[d.getMonth()]}`;
+}
+
+const PROGRESS_STAGES = [
+  "Application Submitted",
+  "Documents Verified",
+  "Filed in Court",
+  "Hearing Scheduled",
+  "Hearing Completed",
+  "Fine Paid",
+  "Receipt Issued",
+  "Challan Disposed",
+  "RTO Records Updated",
+  "Case Closed",
+] as const;
+
+type ProgressStage = (typeof PROGRESS_STAGES)[number];
+
+function SubStageTimeline({ history }: { history: StageEntry[] }) {
+  if (history.length === 0) return null;
+  return (
+    <ol className="mt-3 border-l border-[var(--border-subtle)] pl-3 space-y-1.5">
+      {history.map((entry, i) => {
+        const isCurrent = i === history.length - 1;
+        return (
+          <li
+            key={`${entry.stage}-${i}`}
+            className="relative flex items-center gap-2"
+          >
+            <span
+              className={`absolute -left-[13px] w-2 h-2 rounded-full ring-2 ring-white ${
+                isCurrent ? "bg-primary-600" : "bg-success"
+              }`}
+            />
+            <span
+              className={`t-caption min-w-0 flex-1 truncate ${
+                isCurrent
+                  ? "text-primary-700 font-semibold"
+                  : "text-neutral-700"
+              }`}
+            >
+              {entry.stage}
+            </span>
+            <span className="t-caption tabular text-neutral-500 shrink-0">
+              {entry.time}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function StageStepper({
+  value,
+  onChange,
+}: {
+  value: ProgressStage;
+  onChange: (s: ProgressStage) => void;
+}) {
+  return (
+    <div className="mt-3">
+      <StageDropdown value={value} onChange={onChange} />
+    </div>
+  );
+}
+
+function StageDropdown({
+  value,
+  onChange,
+}: {
+  value: ProgressStage;
+  onChange: (s: ProgressStage) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const currentIndex = PROGRESS_STAGES.indexOf(value);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("mousedown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("mousedown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative block w-full">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className="w-full inline-flex items-center gap-2 h-9 pl-3 pr-2 rounded-full border border-[var(--border-default)] bg-white text-neutral-800 t-caption font-semibold hover:bg-neutral-50"
+      >
+        <ListChecks size={14} className="text-primary-600 shrink-0" />
+        <span className="flex-1 min-w-0 truncate text-left">{value}</span>
+        <ChevronDown
+          size={14}
+          className={`text-neutral-500 shrink-0 transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && (
+        <div
+          role="listbox"
+          className="absolute left-0 right-0 top-[calc(100%+6px)] z-20 w-full max-h-72 overflow-y-auto rounded-xl border border-[var(--border-default)] bg-white shadow-e2 py-1"
+        >
+          {PROGRESS_STAGES.map((s, i) => {
+            const selected = s === value;
+            const done = i < currentIndex;
+            return (
+              <button
+                key={s}
+                type="button"
+                role="option"
+                aria-selected={selected}
+                onClick={() => {
+                  onChange(s);
+                  setOpen(false);
+                }}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-left t-body-sm ${
+                  selected
+                    ? "bg-primary-50 text-primary-700 font-semibold"
+                    : "text-neutral-800 hover:bg-neutral-50"
+                }`}
+              >
+                <span className="w-4 shrink-0 flex items-center justify-center">
+                  {selected ? (
+                    <Check size={14} className="text-primary-600" />
+                  ) : done ? (
+                    <Check size={14} className="text-success" />
+                  ) : (
+                    <span className="w-1.5 h-1.5 rounded-full bg-neutral-300" />
+                  )}
+                </span>
+                <span className="flex-1 min-w-0 truncate">{s}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -852,206 +1008,6 @@ function TimelineRow({
   );
 }
 
-function CompleteUploadSheet({
-  open,
-  onClose,
-}: {
-  open: boolean;
-  onClose: () => void;
-}) {
-  const router = useRouter();
-  const [receipt, setReceipt] = useState<File | null>(null);
-  const [submitted, setSubmitted] = useState(false);
-
-  const canSubmit = receipt !== null && !submitted;
-
-  const handleSubmit = () => {
-    if (!canSubmit) return;
-    setSubmitted(true);
-    setTimeout(() => {
-      router.push("/home");
-    }, 1400);
-  };
-
-  const handleClose = () => {
-    if (submitted) return;
-    onClose();
-    setTimeout(() => {
-      setReceipt(null);
-    }, 250);
-  };
-
-  return (
-    <div
-      className={`fixed inset-0 z-50 ${open ? "" : "pointer-events-none"}`}
-      aria-hidden={!open}
-    >
-      <div
-        onClick={handleClose}
-        className={`absolute inset-0 bg-black/40 transition-opacity duration-200 ${
-          open ? "opacity-100" : "opacity-0"
-        }`}
-      />
-
-      <div
-        className={`absolute inset-x-0 bottom-0 bg-white rounded-t-2xl shadow-e3 transition-[translate] duration-300 ease-out ${
-          open ? "translate-y-0" : "translate-y-full"
-        }`}
-      >
-        <div className="pt-2 pb-1 flex justify-center">
-          <span className="w-10 h-1 rounded-full bg-neutral-200" />
-        </div>
-
-        {submitted ? (
-          <div className="px-6 pt-6 pb-8 flex flex-col items-center text-center">
-            <div className="w-14 h-14 rounded-full bg-success-subtle flex items-center justify-center mb-3">
-              <CheckCircle2 size={30} className="text-success-bold" />
-            </div>
-            <div className="t-h3 font-bold text-neutral-800">
-              Submitted for verification
-            </div>
-            <div className="t-body-sm text-neutral-500 mt-1 max-w-[280px]">
-              We&apos;ll notify you once the team confirms the uploads. Redirecting…
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="px-4 pt-2 pb-2 flex items-center justify-between gap-3">
-              <div className="t-h3 font-bold text-neutral-800">
-                Complete case
-              </div>
-              <button
-                type="button"
-                onClick={handleClose}
-                className="w-9 h-9 -mr-1 shrink-0 rounded-full hover:bg-neutral-50 flex items-center justify-center text-neutral-500"
-                aria-label="Close"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="px-4 py-3">
-              <UploadRow
-                icon={<Receipt size={18} />}
-                title="Payment receipt"
-                subtitle="Challan payment / transaction receipt"
-                file={receipt}
-                onFile={setReceipt}
-              />
-            </div>
-
-            <div className="px-4 pb-3">
-              <div className="flex items-start gap-2.5 rounded-xl bg-info-subtle px-3 py-2.5">
-                <ShieldCheck
-                  size={16}
-                  className="text-info-bold shrink-0 mt-0.5"
-                />
-                <div className="t-caption text-info-bold leading-relaxed">
-                  Our team will verify the uploads within 24 hours before the case is marked complete.
-                </div>
-              </div>
-            </div>
-
-            <div className="px-4 pt-1 pb-5 space-y-2">
-              <Button
-                variant="primary"
-                size="lg"
-                fullWidth
-                disabled={!canSubmit}
-                onClick={handleSubmit}
-              >
-                Submit for verification
-              </Button>
-              <Button variant="ghost" fullWidth onClick={handleClose}>
-                Cancel
-              </Button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function UploadRow({
-  icon,
-  title,
-  subtitle,
-  file,
-  onFile,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  subtitle: string;
-  file: File | null;
-  onFile: (f: File | null) => void;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const next = e.target.files?.[0];
-    if (next) onFile(next);
-    e.target.value = "";
-  };
-
-  const openPicker = () => inputRef.current?.click();
-
-  if (file) {
-    return (
-      <div className="w-full flex items-center gap-3 px-3 py-3 rounded-xl border border-success bg-success-subtle/60">
-        <div className="w-10 h-10 rounded-lg bg-success flex items-center justify-center shrink-0 text-white">
-          <Check size={18} strokeWidth={3} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="t-body font-semibold text-neutral-800 truncate">
-            {title}
-          </div>
-          <div className="t-caption text-neutral-600 truncate mt-0.5">
-            {file.name}
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={openPicker}
-          className="t-caption font-semibold text-primary-700 shrink-0 px-2 py-1 rounded-md hover:bg-white/60"
-        >
-          Replace
-        </button>
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*,application/pdf"
-          className="hidden"
-          onChange={handleChange}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={openPicker}
-      className="w-full flex items-center gap-3 px-3 py-3 rounded-xl border border-[var(--border-subtle)] hover:border-primary-300 hover:bg-primary-50/40 transition-colors text-left"
-    >
-      <div className="w-10 h-10 rounded-lg bg-primary-50 text-primary-700 flex items-center justify-center shrink-0">
-        {icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="t-body font-semibold text-neutral-800">{title}</div>
-        <div className="t-caption text-neutral-500 mt-0.5">{subtitle}</div>
-      </div>
-      <ChevronRight size={16} className="text-neutral-300 shrink-0" />
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*,application/pdf"
-        className="hidden"
-        onChange={handleChange}
-      />
-    </button>
-  );
-}
 
 type DocOption = {
   id: string;
@@ -1434,3 +1390,246 @@ function ConfirmCancelDialog({
   );
 }
 
+type CallEntry = {
+  id: string;
+  name: string;
+  role: string;
+  direction: "incoming" | "outgoing" | "missed";
+  duration: string;
+  at: string;
+};
+
+const INCIDENT_CALLS: CallEntry[] = [
+  {
+    id: "c1",
+    name: "Vikram Rao",
+    role: "Partner · LLD-12121",
+    direction: "outgoing",
+    duration: "2m 14s",
+    at: "Today, 11:08",
+  },
+  {
+    id: "c2",
+    name: "Lawyered Support",
+    role: "Ops · Priya",
+    direction: "incoming",
+    duration: "4m 02s",
+    at: "Today, 10:52",
+  },
+  {
+    id: "c3",
+    name: "Vikram Rao",
+    role: "Partner · LLD-12121",
+    direction: "missed",
+    duration: "—",
+    at: "Today, 10:34",
+  },
+];
+
+function IncidentCallsPanel() {
+  const [callSheetOpen, setCallSheetOpen] = useState(false);
+  return (
+    <>
+      <div className="space-y-3">
+        <SectionLabel>Call log</SectionLabel>
+        <Card padding="none">
+          <div className="divide-y divide-[var(--border-subtle)]">
+            {INCIDENT_CALLS.map((call) => (
+              <CallLogRow key={call.id} call={call} />
+            ))}
+          </div>
+        </Card>
+      </div>
+      <button
+        type="button"
+        onClick={() => setCallSheetOpen(true)}
+        aria-label="Call now"
+        className="absolute bottom-6 right-4 z-30 h-14 pl-4 pr-5 inline-flex items-center gap-2 rounded-full bg-primary-600 text-white shadow-e3 hover:bg-primary-700 active:scale-[0.98] transition-all"
+      >
+        <PhoneCall size={18} />
+        <span className="t-body-sm font-semibold">Call now</span>
+      </button>
+      <CallNowSheet
+        open={callSheetOpen}
+        onClose={() => setCallSheetOpen(false)}
+      />
+    </>
+  );
+}
+
+function CallNowSheet({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const [batchId, setBatchId] = useState("");
+  const [incidentId, setIncidentId] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [calling, setCalling] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open) {
+      setBatchId("");
+      setIncidentId("");
+      setError(null);
+      setCalling(false);
+    }
+  }, [open]);
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const batch = batchId.trim().toUpperCase();
+    const incident = incidentId.trim().toUpperCase();
+    if (!batch && !incident) {
+      setError("Enter a Batch ID or Incident number to continue.");
+      return;
+    }
+    setCalling(true);
+    window.setTimeout(() => {
+      onClose();
+    }, 900);
+  };
+
+  return (
+    <div
+      className={`fixed inset-0 z-50 ${open ? "" : "pointer-events-none"}`}
+      aria-hidden={!open}
+    >
+      <div
+        onClick={onClose}
+        className={`absolute inset-0 bg-black/40 transition-opacity duration-200 ${
+          open ? "opacity-100" : "opacity-0"
+        }`}
+      />
+      <div
+        className={`absolute inset-x-0 bottom-0 bg-white rounded-t-2xl shadow-e3 transition-transform duration-300 ease-out ${
+          open ? "translate-y-0" : "translate-y-full"
+        }`}
+      >
+        <div className="pt-2 pb-1 flex justify-center">
+          <span className="w-10 h-1 rounded-full bg-neutral-200" />
+        </div>
+        <div className="px-4 pt-2 pb-3 flex items-start justify-between gap-3">
+          <div>
+            <div className="t-h3 font-bold text-neutral-800">Call now</div>
+            <div className="t-caption text-neutral-500 mt-0.5">
+              Place a call by Batch ID or Incident number.
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="w-9 h-9 -mr-1 shrink-0 rounded-full hover:bg-neutral-50 flex items-center justify-center text-neutral-500"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <form onSubmit={submit} className="px-4 pb-5 space-y-3">
+          <label className="block">
+            <span className="t-caption font-semibold text-neutral-600">
+              Batch ID
+            </span>
+            <input
+              autoFocus
+              value={batchId}
+              onChange={(e) => {
+                setBatchId(e.target.value);
+                if (error) setError(null);
+              }}
+              placeholder="e.g. BATCH-2410"
+              className="mt-1.5 w-full h-11 px-3 rounded-xl border border-[var(--border-default)] bg-white t-body text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:border-primary-500"
+            />
+          </label>
+          <label className="block">
+            <span className="t-caption font-semibold text-neutral-600">
+              Incident number
+            </span>
+            <input
+              value={incidentId}
+              onChange={(e) => {
+                setIncidentId(e.target.value);
+                if (error) setError(null);
+              }}
+              placeholder="e.g. IRN-100842"
+              className="mt-1.5 w-full h-11 px-3 rounded-xl border border-[var(--border-default)] bg-white t-body text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:border-primary-500"
+            />
+          </label>
+          {error && (
+            <span className="block t-caption text-error-bold">{error}</span>
+          )}
+          <button
+            type="submit"
+            disabled={calling}
+            className="w-full h-12 rounded-xl bg-success text-white t-body font-semibold inline-flex items-center justify-center gap-2 hover:bg-success-bold disabled:opacity-70 active:scale-[0.99] transition-all"
+          >
+            <PhoneCall size={16} />
+            {calling ? "Connecting…" : "Make call"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function CallLogRow({ call }: { call: CallEntry }) {
+  const config = {
+    incoming: {
+      icon: PhoneIncoming,
+      iconClass: "bg-success-subtle text-success-bold",
+      label: "Incoming",
+    },
+    outgoing: {
+      icon: PhoneOutgoing,
+      iconClass: "bg-primary-50 text-primary-700",
+      label: "Outgoing",
+    },
+    missed: {
+      icon: PhoneMissed,
+      iconClass: "bg-error-subtle text-error-bold",
+      label: "Missed",
+    },
+  }[call.direction];
+  const Icon = config.icon;
+  return (
+    <div className="p-3">
+      <div className="flex items-center gap-3">
+        <div
+          className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${config.iconClass}`}
+        >
+          <Icon size={18} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="t-body-sm font-semibold text-neutral-800 truncate">
+            {call.name}
+          </div>
+          <div className="mt-0.5 t-caption text-neutral-500 truncate">
+            {config.label} · {call.duration}
+          </div>
+        </div>
+        <div className="shrink-0 flex flex-col items-end gap-1.5">
+          <span className="t-caption text-neutral-500 tabular">{call.at}</span>
+          <a
+            href="tel:+911800123456"
+            aria-label={`Call ${call.name}`}
+            className="w-9 h-9 rounded-full bg-success-subtle text-success-bold hover:bg-success/15 flex items-center justify-center"
+          >
+            <Phone size={16} />
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -14,8 +14,8 @@ const BUSINESS_STEPS: Step[] = [
   { label: "Account Type", href: "/account-type" },
   { label: "Role", href: "/role" },
   { label: "Expertise", href: "/onboarding/expertise" },
-  { label: "Personal", href: "/onboarding/personal" },
   { label: "Business", href: "/onboarding/business" },
+  { label: "Personal", href: "/onboarding/personal" },
   { label: "Documents", href: "/onboarding/documents" },
 ];
 
@@ -28,21 +28,16 @@ export const ONBOARDING_TOTAL = BASE_STEPS.length;
 
 export function OnboardingStepBar({
   current,
-  label,
-  stepNumber,
   steps = BASE_STEPS,
 }: {
   current: number;
-  label: string;
+  label?: string;
   stepNumber?: number;
   steps?: Step[];
 }) {
   const total = steps.length;
   return (
     <div>
-      <div className="t-body-sm font-medium text-neutral-500 mb-2">
-        Step {stepNumber ?? current}: {label}
-      </div>
       <div className="flex items-center gap-2">
         {Array.from({ length: total }).map((_, i) => {
           const stepNum = i + 1;

@@ -12,57 +12,21 @@ import {
 import { Check } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-type Area = { key: string; title: string; desc: string; roles: Role[] };
+type Area = { key: string; title: string; roles: Role[] };
 
 const AREAS: Area[] = [
-  {
-    key: "traffic-challans",
-    title: "Traffic Challans",
-    desc: "E-challans, disputes and settlements",
-    roles: ["lawyer", "rto"],
-  },
-  {
-    key: "accident-response",
-    title: "Accident Response",
-    desc: "On-scene assistance and post-accident support",
-    roles: ["lawyer"],
-  },
-  {
-    key: "court-appearances",
-    title: "Court Appearances",
-    desc: "Traffic court and civil hearings",
-    roles: ["lawyer"],
-  },
-  {
-    key: "rc-registration",
-    title: "RC & Registration",
-    desc: "New registration and RC updates",
-    roles: ["rto"],
-  },
-  {
-    key: "ownership-transfer",
-    title: "Ownership Transfer",
-    desc: "Vehicle transfer and NOC paperwork",
-    roles: ["rto"],
-  },
-  {
-    key: "license-services",
-    title: "License Services",
-    desc: "Learner, renewal and duplicate DL",
-    roles: ["rto"],
-  },
-  {
-    key: "fitness-permits",
-    title: "Fitness & Permits",
-    desc: "Fitness certificates and commercial permits",
-    roles: ["rto"],
-  },
-  {
-    key: "legal-advisory",
-    title: "General Legal Advisory",
-    desc: "Consultations and drafting",
-    roles: ["lawyer"],
-  },
+  { key: "criminal-law", title: "Criminal Law", roles: ["lawyer", "rto"] },
+  { key: "motor-vehicle-act", title: "Motor Vehicle Act", roles: ["lawyer", "rto"] },
+  { key: "corporate-litigation", title: "Corporate Litigation", roles: ["lawyer", "rto"] },
+  { key: "consumer-protection", title: "Consumer Protection Law", roles: ["lawyer", "rto"] },
+  { key: "intellectual-property", title: "Intellectual Property", roles: ["lawyer", "rto"] },
+  { key: "employment-labour", title: "Employment and Labour Laws", roles: ["lawyer", "rto"] },
+  { key: "startup-compliance", title: "Startup and Corporate Compliance", roles: ["lawyer", "rto"] },
+  { key: "taxation", title: "Taxation", roles: ["lawyer", "rto"] },
+  { key: "adr", title: "ADR", roles: ["lawyer", "rto"] },
+  { key: "family-law", title: "Family Law", roles: ["lawyer", "rto"] },
+  { key: "insolvency-bankruptcy", title: "Insolvency and Bankruptcy Law", roles: ["lawyer", "rto"] },
+  { key: "other", title: "Other", roles: ["lawyer", "rto"] },
 ];
 
 export default function ExpertisePage() {
@@ -103,7 +67,7 @@ export default function ExpertisePage() {
     <PhoneFrame label="Onboarding · Expertise">
       <a
         ref={nextLinkRef}
-        href="/onboarding/personal"
+        href={accountType === "business" ? "/onboarding/business" : "/onboarding/personal"}
         className="hidden"
         aria-hidden
         tabIndex={-1}
@@ -112,7 +76,7 @@ export default function ExpertisePage() {
       </a>
       <AppBar back href="/role" title="Area of Expertise" />
 
-      <div className="flex flex-col min-h-[calc(100%-4rem)] px-4 pt-4 pb-6">
+      <div className="px-4 pt-4 pb-32">
         <div className="mb-6">
           <OnboardingStepBar
             current={3}
@@ -122,12 +86,8 @@ export default function ExpertisePage() {
         </div>
 
         <h1 className="t-h1 font-bold text-neutral-800 tracking-tight">
-          What Do You Specialise In?
+          What is your area of expertise?
         </h1>
-        <p className="t-body text-neutral-500 mt-2">
-          Pick every area you can take up. You can update this later from your
-          profile.
-        </p>
 
         <div className="space-y-3 mt-6">
           {visibleAreas.map((a) => {
@@ -148,13 +108,10 @@ export default function ExpertisePage() {
                       : "hover:border-primary-300"
                   }`}
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1 min-w-0 self-center">
-                      <div className="t-body-lg font-bold text-neutral-800">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="t-body-lg font-medium text-neutral-800">
                         {a.title}
-                      </div>
-                      <div className="t-body-sm text-neutral-500 mt-0.5 leading-snug">
-                        {a.desc}
                       </div>
                     </div>
                     <div
