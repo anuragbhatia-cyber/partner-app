@@ -306,9 +306,6 @@ function DetailsPanel({
           <Chip tone="warning" dot>
             IN PROGRESS
           </Chip>
-          <span className="t-caption text-neutral-600 font-medium">
-            2 days elapsed
-          </span>
         </div>
         <Chip tone="error" size="sm">HIGH</Chip>
       </div>
@@ -325,11 +322,18 @@ function DetailsPanel({
           />
           <Field label="State" value="Maharashtra" />
 
-          <Field label="Fine Amount" value={<span className="font-mono">₹2,500</span>} />
+          <Field label="Challan Amount" value={<span className="font-mono">₹2,500</span>} />
           <Field
             label="TAT Deadline"
             value={<span className="font-semibold text-error">20 Aug 2026</span>}
           />
+
+          <div className="col-span-2">
+            <Field
+              label="Offence"
+              value="Running a red light at the intersection of MG Road and Brigade Road."
+            />
+          </div>
         </div>
       </Card>
 
@@ -1464,8 +1468,7 @@ function CallNowSheet({
   open: boolean;
   onClose: () => void;
 }) {
-  const [batchId, setBatchId] = useState("");
-  const [incidentId, setIncidentId] = useState("");
+  const [reference, setReference] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [calling, setCalling] = useState(false);
 
@@ -1480,8 +1483,7 @@ function CallNowSheet({
 
   useEffect(() => {
     if (!open) {
-      setBatchId("");
-      setIncidentId("");
+      setReference("");
       setError(null);
       setCalling(false);
     }
@@ -1489,9 +1491,8 @@ function CallNowSheet({
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    const batch = batchId.trim().toUpperCase();
-    const incident = incidentId.trim().toUpperCase();
-    if (!batch && !incident) {
+    const value = reference.trim().toUpperCase();
+    if (!value) {
       setError("Enter a Batch ID or Incident number to continue.");
       return;
     }
@@ -1540,30 +1541,16 @@ function CallNowSheet({
         <form onSubmit={submit} className="px-4 pb-5 space-y-3">
           <label className="block">
             <span className="t-caption font-semibold text-neutral-600">
-              Batch ID
+              Batch ID / Incident number
             </span>
             <input
               autoFocus
-              value={batchId}
+              value={reference}
               onChange={(e) => {
-                setBatchId(e.target.value);
+                setReference(e.target.value);
                 if (error) setError(null);
               }}
-              placeholder="e.g. BATCH-2410"
-              className="mt-1.5 w-full h-11 px-3 rounded-xl border border-[var(--border-default)] bg-white t-body text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:border-primary-500"
-            />
-          </label>
-          <label className="block">
-            <span className="t-caption font-semibold text-neutral-600">
-              Incident number
-            </span>
-            <input
-              value={incidentId}
-              onChange={(e) => {
-                setIncidentId(e.target.value);
-                if (error) setError(null);
-              }}
-              placeholder="e.g. IRN-100842"
+              placeholder="e.g. BATCH-2410 or IRN-100842"
               className="mt-1.5 w-full h-11 px-3 rounded-xl border border-[var(--border-default)] bg-white t-body text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:border-primary-500"
             />
           </label>

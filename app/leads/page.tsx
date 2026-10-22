@@ -4,25 +4,19 @@ import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
 import { BottomTabBar } from "@/components/BottomTabBar";
 import { CommissionCard } from "@/components/CommissionCard";
 import { Chip } from "@/components/ui";
-import { MapPin, Clock, Inbox, ChevronRight, Check } from "lucide-react";
+import { Clock, Inbox } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   assignLead,
   CATEGORY_LABELS,
   CATEGORY_TONE,
   Lead,
   LeadCategory,
-  LeadUrgency,
+  skipLead,
   useLeadsStore,
 } from "@/lib/leads-store";
-
-const urgencyDeadline: Record<LeadUrgency, string> = {
-  high: "2 days",
-  medium: "5 days",
-  low: "10 days",
-};
 
 type Filter = "all" | LeadCategory;
 
@@ -58,6 +52,11 @@ export default function LeadsPage() {
     toast.show(`${lead.type} assigned to you`);
   };
 
+  const handleReject = (lead: Lead) => {
+    skipLead(lead.id);
+    toast.show(`${lead.id} rejected`);
+  };
+
   return (
     <PhoneFrame label="Assignments">
       <AppBar
@@ -90,7 +89,7 @@ export default function LeadsPage() {
             </div>
           </div>
         </div>
-        <CommissionCard />
+        {/* <CommissionCard /> */}
       </div>
 
       <div className="sticky top-16 z-20 px-4 pt-2 pb-3 bg-[var(--surface-bg)] border-b border-[var(--border-subtle)]">
@@ -116,7 +115,12 @@ export default function LeadsPage() {
           />
         ) : (
           filtered.map((lead) => (
-            <LeadCard key={lead.id} lead={lead} onAssign={() => handleAssign(lead)} />
+            <LeadCard
+              key={lead.id}
+              lead={lead}
+              onAssign={() => handleAssign(lead)}
+              onReject={() => handleReject(lead)}
+            />
           ))
         )}
       </div>
@@ -161,7 +165,15 @@ function FilterPill({
   );
 }
 
-function LeadCard({ lead, onAssign }: { lead: Lead; onAssign: () => void }) {
+function LeadCard({
+  lead,
+  onAssign,
+  onReject,
+}: {
+  lead: Lead;
+  onAssign: () => void;
+  onReject: () => void;
+}) {
   return (
     <div className="rounded-xl bg-white shadow-e1 border border-[var(--border-default)] overflow-hidden transition-shadow hover:shadow-e2">
       <Link
@@ -173,34 +185,27 @@ function LeadCard({ lead, onAssign }: { lead: Lead; onAssign: () => void }) {
             <div className="t-body-lg font-semibold text-neutral-900">
               {lead.id}
             </div>
-            <div className="mt-0.5 inline-flex items-center gap-1 t-body-sm text-neutral-600 min-w-0">
-              <MapPin size={13} className="text-neutral-500 shrink-0" />
-              <span className="truncate">{lead.location}</span>
-            </div>
           </div>
           <div className="flex items-center gap-4 shrink-0">
             <Chip tone={CATEGORY_TONE[lead.category]} size="sm">
               {CATEGORY_LABELS[lead.category]}
             </Chip>
-            <span className="t-caption font-semibold text-error">
-              {urgencyDeadline[lead.urgency]}
-            </span>
           </div>
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
-          <div>
-            <div className="t-caption text-neutral-500">Earnings</div>
-            <div className="mt-0.5 t-body-lg font-semibold text-success-bold leading-none">
-              In progress
-            </div>
-          </div>
           <div>
             <div className="t-caption text-neutral-500">
               Number of {lead.itemLabel.toLowerCase()}
             </div>
             <div className="mt-0.5 t-h2 font-extrabold tabular text-neutral-800 leading-none">
               {lead.items.length}
+            </div>
+          </div>
+          <div>
+            <div className="t-caption text-neutral-500">Accept by</div>
+            <div className="mt-0.5 t-h3 font-bold text-neutral-800 leading-none">
+              {lead.items[0]?.tatDeadline ?? "—"}
             </div>
           </div>
         </div>
@@ -211,7 +216,22 @@ function LeadCard({ lead, onAssign }: { lead: Lead; onAssign: () => void }) {
           <Clock size={12} />
           {fmtTime(lead.postedMinAgo)}
         </div>
-        <SwipeToAccept onConfirm={onAssign} />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onReject}
+            className="h-11 px-5 rounded-full border border-[var(--border-default)] bg-white t-body-sm font-semibold text-neutral-900 hover:bg-neutral-50 transition-colors"
+          >
+            Reject
+          </button>
+          <button
+            type="button"
+            onClick={onAssign}
+            className="flex-1 h-11 rounded-full bg-primary-600 text-white t-body-sm font-semibold hover:bg-primary-700 active:scale-[0.99] transition-all"
+          >
+            Click to accept
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -265,100 +285,3 @@ function LeadsEmpty({
   );
 }
 
-function SwipeToAccept({ onConfirm }: { onConfirm: () => void }) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const [x, setX] = useState(0);
-  const [dragging, setDragging] = useState(false);
-  const [confirmed, setConfirmed] = useState(false);
-  const startRef = useRef(0);
-  const maxRef = useRef(0);
-  const xRef = useRef(0);
-
-  const THUMB = 36;
-  const PAD = 4;
-
-  const measure = () => {
-    const w = trackRef.current?.offsetWidth ?? 0;
-    maxRef.current = Math.max(0, w - THUMB - PAD * 2);
-  };
-
-  const handleDown = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (confirmed) return;
-    measure();
-    setDragging(true);
-    startRef.current = e.clientX - xRef.current;
-    e.currentTarget.setPointerCapture(e.pointerId);
-  };
-
-  const handleMove = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (!dragging) return;
-    const nx = Math.max(
-      0,
-      Math.min(maxRef.current, e.clientX - startRef.current)
-    );
-    xRef.current = nx;
-    setX(nx);
-  };
-
-  const handleUp = () => {
-    if (!dragging) return;
-    setDragging(false);
-    if (xRef.current >= maxRef.current * 0.8 && maxRef.current > 0) {
-      xRef.current = maxRef.current;
-      setX(maxRef.current);
-      setConfirmed(true);
-      window.setTimeout(onConfirm, 220);
-    } else {
-      xRef.current = 0;
-      setX(0);
-    }
-  };
-
-  const progress = maxRef.current > 0 ? x / maxRef.current : 0;
-  const fillWidth = PAD + THUMB / 2 + x + THUMB / 2;
-
-  return (
-    <div
-      ref={trackRef}
-      className="relative h-11 w-full rounded-full bg-primary-50 border border-primary-100 overflow-hidden select-none"
-      aria-label="Swipe to accept"
-    >
-      <div
-        className="absolute inset-y-0 left-0 bg-primary-600"
-        style={{
-          width: `${fillWidth}px`,
-          transition: dragging ? "none" : "width 180ms ease-out",
-        }}
-      />
-      <span
-        className="absolute inset-0 flex items-center justify-center t-body-sm font-semibold text-primary-700 pointer-events-none"
-        style={{ opacity: Math.max(0, 1 - progress * 1.4) }}
-      >
-        Swipe to accept
-      </span>
-      <span
-        className="absolute inset-0 flex items-center justify-center t-body-sm font-semibold text-white pointer-events-none"
-        style={{ opacity: Math.min(1, progress * 1.4) }}
-      >
-        {confirmed ? "Assigned" : "Release to accept"}
-      </span>
-      <button
-        type="button"
-        onPointerDown={handleDown}
-        onPointerMove={handleMove}
-        onPointerUp={handleUp}
-        onPointerCancel={handleUp}
-        aria-label="Swipe thumb"
-        disabled={confirmed}
-        style={{
-          transform: `translate3d(${x}px, 0, 0)`,
-          transition: dragging ? "none" : "transform 180ms ease-out",
-          touchAction: "pan-y",
-        }}
-        className="absolute top-1 left-1 h-9 w-9 rounded-full bg-white shadow-e1 flex items-center justify-center text-primary-700 cursor-grab active:cursor-grabbing"
-      >
-        {confirmed ? <Check size={18} /> : <ChevronRight size={18} />}
-      </button>
-    </div>
-  );
-}

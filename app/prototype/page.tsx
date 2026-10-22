@@ -28,6 +28,7 @@ import {
 import { PhoneShell, PhoneFrameProvider } from "@/components/PhoneFrame";
 import { cn } from "@/lib/utils";
 import { setPreviewLeadId } from "@/lib/leads-store";
+import { setPreviewTxnId } from "@/lib/wallet-store";
 import { requestOpenChatOnIncident } from "@/lib/chat-nav";
 
 /* Import every screen. Nested PhoneFrames in each page become no-op
@@ -62,6 +63,7 @@ import IncidentCancelledPage from "@/app/incidents/cancelled/page";
 import IncidentHistoryPage from "@/app/incidents/history/page";
 import WalletPage from "@/app/wallet/page";
 import WalletTransactionsPage from "@/app/wallet/transactions/page";
+import WalletTransactionDetailPage from "@/app/wallet/transactions/[id]/page";
 import WalletPayoutPage from "@/app/wallet/payout/page";
 import NotificationsPage from "@/app/notifications/page";
 import ProfilePage from "@/app/profile/page";
@@ -89,7 +91,7 @@ type ScreenKey =
   | "knowledge"
   | "incidents" | "incidents-predeparture" | "incidents-enroute"
   | "incidents-active" | "incidents-complete" | "incidents-completed" | "incidents-cancelled" | "incidents-history"
-  | "wallet" | "wallet-transactions" | "wallet-payout"
+  | "wallet" | "wallet-transactions" | "wallet-transaction-detail" | "wallet-payout"
   | "notifications"
   | "profile" | "profile-availability" | "profile-documents"
   | "profile-support" | "profile-support-chat" | "profile-support-faq-payment" | "profile-support-faq-cases"
@@ -136,6 +138,7 @@ const SCREENS: ScreenDef[] = [
   { key: "incidents-history", title: "History", section: "incidents", path: "/incidents/history", Component: IncidentHistoryPage },
   { key: "wallet", title: "Wallet", section: "wallet", path: "/wallet", Component: WalletPage },
   { key: "wallet-transactions", title: "Transactions", section: "wallet", path: "/wallet/transactions", Component: WalletTransactionsPage },
+  { key: "wallet-transaction-detail", title: "Transaction Detail", section: "wallet", path: "/wallet/transactions/detail", Component: WalletTransactionDetailPage },
   { key: "wallet-payout", title: "Payout", section: "wallet", path: "/wallet/payout", Component: WalletPayoutPage },
   { key: "notifications", title: "Notifications", section: "notifications", path: "/notifications", Component: NotificationsPage },
   { key: "profile", title: "Profile", section: "profile", path: "/profile", Component: ProfilePage },
@@ -244,6 +247,13 @@ export default function PrototypePlayer() {
         e.preventDefault();
         setPreviewLeadId(decodeURIComponent(leadMatch[1]));
         navigate("lead-detail");
+        return;
+      }
+      const txnMatch = href.match(/^\/wallet\/transactions\/([^/?#]+)$/);
+      if (txnMatch) {
+        e.preventDefault();
+        setPreviewTxnId(decodeURIComponent(txnMatch[1]));
+        navigate("wallet-transaction-detail");
         return;
       }
       const chatMatch = href.match(/^\/chats\/([^/]+)\/open$/);

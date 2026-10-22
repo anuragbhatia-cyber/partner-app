@@ -108,7 +108,7 @@ function IncidentCancelledView() {
             <Field label="Challan Number" value={<span className="font-mono">MH012024789456</span>} />
             <Field label="Vehicle Number" value={<span className="font-mono">MH01AB1234</span>} />
             <Field label="State" value="Maharashtra" />
-            <Field label="Fine Amount" value={<span className="font-mono">₹2,500</span>} />
+            <Field label="Challan Amount" value={<span className="font-mono">₹2,500</span>} />
             <Field
               label="Cancelled On"
               value={<span className="font-semibold text-error-bold">Yesterday, 15:00</span>}

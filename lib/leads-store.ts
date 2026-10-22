@@ -12,6 +12,9 @@ export type LeadItem = {
   state: string;
   fineAmount: number;
   tatDeadline: string;
+  offence: string;
+  courtLocation: string;
+  challanDate: string;
 };
 
 export type Lead = {
@@ -90,20 +93,98 @@ type State = {
   closed: ActiveIncident[];
 };
 
+const OFFENCES_BY_CATEGORY: Record<LeadCategory, string[]> = {
+  challan: [
+    "Running a red light at a signalised intersection",
+    "Over-speeding above the posted limit",
+    "Driving without a valid licence",
+    "Riding without a helmet",
+    "Using mobile phone while driving",
+    "No seat belt — driver",
+    "Parking in a no-parking zone",
+    "Jumping the stop line",
+  ],
+  case: [
+    "Section 279 IPC — rash & negligent driving",
+    "Section 304A IPC — causing death by negligence",
+    "Section 184 MV Act — driving dangerously",
+    "Section 185 MV Act — drunk driving",
+    "Section 134 MV Act — hit and run",
+    "Section 3/181 MV Act — driving without licence",
+    "Section 177 MV Act — general obstruction",
+  ],
+  rto: [
+    "Vehicle ownership transfer",
+    "Registration certificate renewal",
+    "Change of address on RC",
+    "Hypothecation addition",
+    "Hypothecation termination",
+    "Duplicate RC issuance",
+    "Fitness certificate renewal",
+  ],
+};
+
+const COURTS_BY_STATE: Record<string, string[]> = {
+  Maharashtra: [
+    "Shivaji Nagar Court, Mumbai",
+    "Esplanade Court, Mumbai",
+    "Dadar Mahanagar Court, Mumbai",
+    "Shivajinagar Court, Pune",
+    "Bandra Metropolitan Court, Mumbai",
+  ],
+  Karnataka: [
+    "City Civil Court, Bengaluru",
+    "Mayo Hall Court, Bengaluru",
+    "Magistrate Court, Jayanagar",
+    "Traffic Court, Shivajinagar",
+    "ACMM Court, Bengaluru",
+  ],
+};
+
+const MONTHS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+function parseDate(s: string): Date | null {
+  // Expect format "DD MMM YYYY"
+  const parts = s.split(" ");
+  if (parts.length !== 3) return null;
+  const day = Number(parts[0]);
+  const month = MONTHS.indexOf(parts[1]);
+  const year = Number(parts[2]);
+  if (!day || month < 0 || !year) return null;
+  return new Date(year, month, day);
+}
+
+function fmtDate(d: Date): string {
+  return `${String(d.getDate()).padStart(2, "0")} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+}
+
 function buildItems(
   prefix: string,
   state: string,
   stateCode: string,
   count: number,
   fine: number,
-  tat: string
+  tat: string,
+  category: LeadCategory
 ): LeadItem[] {
+  const pool = OFFENCES_BY_CATEGORY[category];
+  const courts = COURTS_BY_STATE[state] ?? [`District Court, ${state}`];
+  const tatDate = parseDate(tat);
   return Array.from({ length: count }, (_, i) => {
     const idx = i + 1;
     const seq = String(idx).padStart(4, "0");
     const vehSeq = String(1234 + i).padStart(4, "0");
     const vehLetters = String.fromCharCode(65 + (i % 26)) +
       String.fromCharCode(65 + ((i + 7) % 26));
+    let challanDate = tat;
+    if (tatDate) {
+      const d = new Date(tatDate);
+      d.setDate(d.getDate() - (30 + ((i * 3) % 20)));
+      challanDate = fmtDate(d);
+    }
     return {
       incidentId: `IRN-${prefix}${seq}`,
       challanNumber: `${stateCode}01${2024}${String(700000 + i * 37 + idx).padStart(6, "0")}`,
@@ -111,6 +192,9 @@ function buildItems(
       state,
       fineAmount: fine,
       tatDeadline: tat,
+      offence: pool[i % pool.length],
+      courtLocation: courts[i % courts.length],
+      challanDate,
     };
   });
 }
@@ -125,7 +209,7 @@ const SEED_LEADS: Lead[] = [
     earnings: 500,
     postedMinAgo: 2,
     urgency: "high",
-    items: buildItems("12", "Maharashtra", "MH", 10, 2500, "20 Aug 2026"),
+    items: buildItems("12", "Maharashtra", "MH", 10, 2500, "20 Aug 2026", "challan"),
   },
   {
     id: "BATCH-2310",
@@ -136,18 +220,18 @@ const SEED_LEADS: Lead[] = [
     earnings: 1200,
     postedMinAgo: 6,
     urgency: "medium",
-    items: buildItems("13", "Karnataka", "KA", 12, 3500, "28 Aug 2026"),
+    items: buildItems("13", "Karnataka", "KA", 12, 3500, "28 Aug 2026", "case"),
   },
   {
     id: "BATCH-2309",
     type: "RTO Renewals",
     category: "rto",
-    itemLabel: "RTO Tasks",
+    itemLabel: "RTO's",
     location: "HSR Layout, Bengaluru",
     earnings: 320,
     postedMinAgo: 8,
     urgency: "high",
-    items: buildItems("14", "Karnataka", "KA", 6, 1800, "15 Aug 2026"),
+    items: buildItems("14", "Karnataka", "KA", 6, 1800, "15 Aug 2026", "rto"),
   },
   {
     id: "BATCH-2308",
@@ -158,7 +242,7 @@ const SEED_LEADS: Lead[] = [
     earnings: 220,
     postedMinAgo: 14,
     urgency: "medium",
-    items: buildItems("15", "Maharashtra", "MH", 4, 1500, "02 Sep 2026"),
+    items: buildItems("15", "Maharashtra", "MH", 4, 1500, "02 Sep 2026", "challan"),
   },
   {
     id: "BATCH-2307",
@@ -169,7 +253,7 @@ const SEED_LEADS: Lead[] = [
     earnings: 650,
     postedMinAgo: 22,
     urgency: "low",
-    items: buildItems("16", "Karnataka", "KA", 5, 2800, "10 Sep 2026"),
+    items: buildItems("16", "Karnataka", "KA", 5, 2800, "10 Sep 2026", "case"),
   },
   {
     id: "BATCH-2306",
@@ -180,18 +264,18 @@ const SEED_LEADS: Lead[] = [
     earnings: 1800,
     postedMinAgo: 34,
     urgency: "high",
-    items: buildItems("17", "Karnataka", "KA", 15, 4000, "22 Aug 2026"),
+    items: buildItems("17", "Karnataka", "KA", 15, 4000, "22 Aug 2026", "case"),
   },
   {
     id: "BATCH-2305",
     type: "RTO Renewals",
     category: "rto",
-    itemLabel: "RTO Tasks",
+    itemLabel: "RTO's",
     location: "Jayanagar, Bengaluru",
     earnings: 180,
     postedMinAgo: 51,
     urgency: "low",
-    items: buildItems("18", "Karnataka", "KA", 3, 1200, "18 Sep 2026"),
+    items: buildItems("18", "Karnataka", "KA", 3, 1200, "18 Sep 2026", "rto"),
   },
 ];
 
@@ -329,7 +413,7 @@ export function assignLead(id: string) {
   const incident: ActiveIncident = {
     caseId: nextIrn(),
     vehicle: first?.vehicleNumber ?? "",
-    description: `${lead.items.length} ${lead.itemLabel} · ${lead.location}`,
+    description: lead.type,
     status: "ACCEPTED",
     deadlineDays: lead.urgency === "high" ? 2 : lead.urgency === "medium" ? 5 : 10,
     category: lead.category,

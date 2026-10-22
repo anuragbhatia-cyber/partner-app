@@ -4,18 +4,18 @@ import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
 import { Card, Chip, SectionLabel } from "@/components/ui";
 import {
   Check,
-  ChevronRight,
+  Download,
   IndianRupee,
-  MapPin,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   assignLead,
   CATEGORY_LABELS,
   CATEGORY_TONE,
   LeadUrgency,
   leadTotalAmount,
+  skipLead,
   useLeadsStore,
   usePreviewLeadId,
 } from "@/lib/leads-store";
@@ -30,6 +30,18 @@ const urgencyLabel: Record<LeadUrgency, string> = {
   high: "HIGH PRIORITY",
   medium: "MEDIUM PRIORITY",
   low: "LOW PRIORITY",
+};
+
+const priorityLabel: Record<LeadUrgency, string> = {
+  high: "High",
+  medium: "Medium",
+  low: "Low",
+};
+
+const priorityTextTone: Record<LeadUrgency, string> = {
+  high: "text-error",
+  medium: "text-warning-bold",
+  low: "text-neutral-700",
 };
 
 const urgencyDeadline: Record<LeadUrgency, string> = {
@@ -107,11 +119,18 @@ export default function LeadDetailPage() {
   }
 
   const totalAmount = leadTotalAmount(lead);
+  const totalStates = new Set(lead.items.map((i) => i.state)).size;
 
   const handleAssign = () => {
     setAssigning(true);
     assignLead(lead.id);
     router.push("/incidents");
+  };
+
+  const handleReject = () => {
+    setAssigning(true);
+    skipLead(lead.id);
+    router.push("/leads");
   };
 
   return (
@@ -142,38 +161,73 @@ export default function LeadDetailPage() {
           </span>
         </div>
 
-        <div>
+        <div className="flex items-center justify-between gap-3">
           <h2 className="t-h2 font-bold text-neutral-900 leading-tight">
-            {lead.items.length} {lead.itemLabel}
+            {lead.id}
           </h2>
-          <div className="mt-1.5 inline-flex items-center gap-1.5 t-body-sm text-neutral-600">
-            <MapPin size={14} className="text-neutral-500" />
-            {lead.location}
-          </div>
+          <button
+            type="button"
+            onClick={() => {
+              // Prototype: trigger a download of batch summary
+              const blob = new Blob(
+                [JSON.stringify(lead, null, 2)],
+                { type: "application/json" }
+              );
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `${lead.id}.json`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full border border-primary-200 bg-primary-50/60 text-primary-700 t-caption font-semibold hover:bg-primary-50 active:scale-[0.98] transition-colors shrink-0"
+            aria-label={`Download ${lead.id}`}
+          >
+            <Download size={14} />
+            Download batch
+          </button>
         </div>
 
-        <Card padding="lg">
-          <div className="grid grid-cols-2 gap-x-4 gap-y-5">
-            <Field
-              label="Earnings"
-              value={
-                <span className="inline-flex items-center text-success-bold font-mono t-h2 font-extrabold tabular leading-none">
-                  <IndianRupee size={18} className="mr-0.5" />
-                  {lead.earnings.toLocaleString("en-IN")}
-                </span>
-              }
-            />
-            <Field
-              label={`Total ${lead.itemLabel === "Challans" ? "Challan Amount" : "Amount"}`}
-              value={
-                <span className="inline-flex items-center font-mono t-h2 font-extrabold tabular text-neutral-900 leading-none">
-                  <IndianRupee size={18} className="mr-0.5" />
-                  {totalAmount.toLocaleString("en-IN")}
-                </span>
-              }
-            />
-          </div>
-        </Card>
+        <div>
+          <SectionLabel className="mb-2">Summary</SectionLabel>
+          <Card padding="lg">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-4">
+              <Field
+                label={`Number of ${lead.itemLabel}`}
+                value={
+                  <span className="t-h3 font-bold tabular text-neutral-900">
+                    {lead.items.length}
+                  </span>
+                }
+              />
+              <Field
+                label="Total states"
+                value={
+                  <span className="t-h3 font-bold tabular text-neutral-900">
+                    {totalStates}
+                  </span>
+                }
+              />
+              <Field
+                label={`Total ${lead.itemLabel === "Challans" ? "Challan Amount" : "Amount"}`}
+                value={
+                  <span className="inline-flex items-center font-mono t-h3 font-bold tabular text-neutral-900">
+                    <IndianRupee size={14} className="mr-0.5" />
+                    {totalAmount.toLocaleString("en-IN")}
+                  </span>
+                }
+              />
+              <Field
+                label="Priority"
+                value={
+                  <span className={`t-h3 font-bold ${priorityTextTone[lead.urgency]}`}>
+                    {priorityLabel[lead.urgency]}
+                  </span>
+                }
+              />
+            </div>
+          </Card>
+        </div>
 
         <div>
           <div className="mb-2 flex items-center justify-between gap-2">
@@ -239,7 +293,7 @@ export default function LeadDetailPage() {
                       />
                       <Field label="State" value={item.state} />
                       <Field
-                        label="Fine Amount"
+                        label={`${CATEGORY_LABELS[lead.category]} Amount`}
                         value={
                           <span className="inline-flex items-center font-mono">
                             <IndianRupee size={13} className="mr-0.5" />
@@ -255,6 +309,16 @@ export default function LeadDetailPage() {
                           </span>
                         }
                       />
+                      <Field label="Challan Date" value={item.challanDate} />
+                      <div className="col-span-2">
+                        <Field
+                          label="Court Location"
+                          value={item.courtLocation}
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Field label="Offence" value={item.offence} />
+                      </div>
                     </div>
                   </div>
                 </button>
@@ -265,7 +329,22 @@ export default function LeadDetailPage() {
       </div>
 
       <div className="sticky bottom-0 z-20 mt-auto bg-white border-t border-[var(--border-subtle)] px-4 pt-3 pb-4">
-        <SwipeToAssign onConfirm={handleAssign} />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleReject}
+            className="h-11 px-5 rounded-full border border-[var(--border-default)] bg-white t-body-sm font-semibold text-neutral-900 hover:bg-neutral-50 transition-colors"
+          >
+            Reject
+          </button>
+          <button
+            type="button"
+            onClick={handleAssign}
+            className="flex-1 h-11 rounded-full bg-primary-600 text-white t-body-sm font-semibold hover:bg-primary-700 active:scale-[0.99] transition-all"
+          >
+            Click to accept
+          </button>
+        </div>
       </div>
     </PhoneFrame>
   );
@@ -286,107 +365,3 @@ function Checkbox({ checked }: { checked: boolean }) {
   );
 }
 
-function SwipeToAssign({ onConfirm }: { onConfirm: () => void }) {
-  const trackRef = useRef<HTMLDivElement | null>(null);
-  const thumbSize = 48;
-  const padding = 4;
-  const [maxX, setMaxX] = useState(0);
-  const [x, setX] = useState(0);
-  const [dragging, setDragging] = useState(false);
-  const [confirmed, setConfirmed] = useState(false);
-  const startXRef = useRef(0);
-  const startOffsetRef = useRef(0);
-
-  useEffect(() => {
-    const measure = () => {
-      const el = trackRef.current;
-      if (!el) return;
-      setMaxX(Math.max(0, el.clientWidth - thumbSize - padding * 2));
-    };
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, []);
-
-  const finish = useCallback(() => {
-    if (confirmed) return;
-    setConfirmed(true);
-    setX(maxX);
-    onConfirm();
-  }, [confirmed, maxX, onConfirm]);
-
-  const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (confirmed) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    startXRef.current = e.clientX;
-    startOffsetRef.current = x;
-    setDragging(true);
-  };
-
-  const onPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (!dragging || confirmed) return;
-    const next = Math.min(
-      maxX,
-      Math.max(0, startOffsetRef.current + (e.clientX - startXRef.current))
-    );
-    setX(next);
-  };
-
-  const onPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (!dragging) return;
-    setDragging(false);
-    e.currentTarget.releasePointerCapture?.(e.pointerId);
-    if (x >= maxX - 2) {
-      finish();
-    } else {
-      setX(0);
-    }
-  };
-
-  const progress = maxX > 0 ? x / maxX : 0;
-
-  return (
-    <div
-      ref={trackRef}
-      className="relative h-14 w-full rounded-full bg-primary-50 border border-primary-100 overflow-hidden select-none"
-    >
-      <div
-        aria-hidden
-        className="absolute bg-primary-500/90 rounded-full"
-        style={{
-          top: padding,
-          bottom: padding,
-          left: padding,
-          width: `${x}px`,
-          transition: dragging ? "none" : "width 220ms ease-out",
-        }}
-      />
-      <div
-        className="absolute inset-0 flex items-center justify-center t-body font-semibold text-primary-700 pointer-events-none"
-        style={{ opacity: 1 - progress * 0.9 }}
-      >
-        {confirmed ? "Assigning…" : "Swipe to assign"}
-      </div>
-      <button
-        type="button"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-        aria-label="Swipe to assign to me"
-        disabled={confirmed}
-        className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full bg-white shadow-e2 text-primary-600 active:scale-[0.97]"
-        style={{
-          width: thumbSize,
-          height: thumbSize,
-          left: padding,
-          transform: `translate(${x}px, -50%)`,
-          transition: dragging ? "none" : "transform 220ms ease-out",
-          touchAction: "none",
-        }}
-      >
-        <ChevronRight size={22} strokeWidth={2.5} />
-      </button>
-    </div>
-  );
-}

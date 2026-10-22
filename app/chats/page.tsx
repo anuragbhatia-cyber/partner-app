@@ -7,6 +7,7 @@ import { BottomTabBar } from "@/components/BottomTabBar";
 import {
   Check,
   CheckCheck,
+  MessageCircle,
   MessageSquarePlus,
   Paperclip,
   Search,
@@ -168,8 +169,7 @@ function NewChatSheet({
   onClose: () => void;
 }) {
   const router = useRouter();
-  const [batchId, setBatchId] = useState("");
-  const [incidentId, setIncidentId] = useState("");
+  const [reference, setReference] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -183,21 +183,19 @@ function NewChatSheet({
 
   useEffect(() => {
     if (!open) {
-      setBatchId("");
-      setIncidentId("");
+      setReference("");
       setError(null);
     }
   }, [open]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    const batch = batchId.trim().toUpperCase();
-    const incident = incidentId.trim().toUpperCase();
-    if (!batch && !incident) {
+    const value = reference.trim().toUpperCase();
+    if (!value) {
       setError("Enter a Batch ID or Incident ID to continue.");
       return;
     }
-    requestOpenChatOnIncident(incident || batch);
+    requestOpenChatOnIncident(value);
     onClose();
     router.push("/incidents/active");
   };
@@ -224,9 +222,6 @@ function NewChatSheet({
         <div className="px-4 pt-2 pb-3 flex items-start justify-between gap-3">
           <div>
             <div className="t-h3 font-bold text-neutral-800">New chat</div>
-            <div className="t-caption text-neutral-500 mt-0.5">
-              Open a chat by Batch ID or Incident ID.
-            </div>
           </div>
           <button
             type="button"
@@ -241,30 +236,16 @@ function NewChatSheet({
         <form onSubmit={submit} className="px-4 pb-5 space-y-3">
           <label className="block">
             <span className="t-caption font-semibold text-neutral-600">
-              Batch ID
+              Batch ID / Incident number
             </span>
             <input
               autoFocus
-              value={batchId}
+              value={reference}
               onChange={(e) => {
-                setBatchId(e.target.value);
+                setReference(e.target.value);
                 if (error) setError(null);
               }}
-              placeholder="e.g. BATCH-2410"
-              className="mt-1.5 w-full h-11 px-3 rounded-xl border border-[var(--border-default)] bg-white t-body text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:border-primary-500"
-            />
-          </label>
-          <label className="block">
-            <span className="t-caption font-semibold text-neutral-600">
-              Incident ID
-            </span>
-            <input
-              value={incidentId}
-              onChange={(e) => {
-                setIncidentId(e.target.value);
-                if (error) setError(null);
-              }}
-              placeholder="e.g. IRN-100842"
+              placeholder="e.g. BATCH-2410 or IRN-100842"
               className="mt-1.5 w-full h-11 px-3 rounded-xl border border-[var(--border-default)] bg-white t-body text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:border-primary-500"
             />
           </label>
@@ -278,6 +259,33 @@ function NewChatSheet({
             className="w-full h-12 rounded-xl bg-primary-600 text-white t-body font-semibold hover:bg-primary-700 active:scale-[0.99] transition-all"
           >
             Start chat
+          </button>
+
+          <div className="flex items-center gap-3 pt-1">
+            <span className="flex-1 h-px bg-[var(--border-subtle)]" />
+            <span className="t-caption text-neutral-400">or</span>
+            <span className="flex-1 h-px bg-[var(--border-subtle)]" />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              router.push("/profile/support/chat");
+            }}
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl border border-[var(--border-default)] bg-white hover:border-primary-300 hover:bg-primary-50/40 transition-colors text-left"
+          >
+            <div className="w-10 h-10 rounded-xl bg-primary-50 text-primary-700 flex items-center justify-center shrink-0">
+              <MessageCircle size={18} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="t-body-sm font-semibold text-neutral-800">
+                Start a general chat
+              </div>
+              <div className="t-caption text-neutral-500">
+                Reach out to the Lawyered team — not tied to any case.
+              </div>
+            </div>
           </button>
         </form>
       </div>

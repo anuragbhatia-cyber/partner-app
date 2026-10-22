@@ -14,12 +14,14 @@ import {
   MessageSquare,
   LayoutList,
   Package,
-  MapPin,
   Upload,
   Download,
   FileSpreadsheet,
   Table2,
   FileUp,
+  FolderUp,
+  FileText,
+  Info,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -34,9 +36,10 @@ import { CompleteCaseSheet } from "@/components/CompleteCaseSheet";
 
 type Tab = "active" | "past";
 type Status = "completed" | "cancelled";
-type FilterStatus = "alloted" | "inprogress" | "assigned" | "completed";
+type FilterStatus = "breaching" | "breached";
 type CategoryFilter = "all" | LeadCategory;
 type ActiveView = "incidents" | "batches";
+type PastView = "mine" | "all";
 
 type PastCase = {
   caseId: string;
@@ -45,6 +48,7 @@ type PastCase = {
   status: Status;
   date: Date;
   category: LeadCategory;
+  mine?: boolean;
 };
 
 // Fixed reference so "Today" / "Yesterday" labels stay stable in a prototype
@@ -58,14 +62,14 @@ function daysAgo(n: number, hh = 12, mm = 0): Date {
 }
 
 const PAST_CASES: PastCase[] = [
-  { caseId: "IRN-100838", type: "RTO Renewal", amount: "₹700", status: "completed", date: daysAgo(0, 9, 42), category: "rto" },
-  { caseId: "IRN-100821", type: "Challan Mgmt", amount: "₹450", status: "completed", date: daysAgo(1, 18, 14), category: "challan" },
-  { caseId: "IRN-100817", type: "Client no-show", status: "cancelled", date: daysAgo(2, 15, 0), category: "case" },
-  { caseId: "IRN-100804", type: "Traffic Challan", amount: "₹850", status: "completed", date: daysAgo(3, 11, 20), category: "challan" },
+  { caseId: "IRN-100838", type: "RTO Renewal", amount: "₹700", status: "completed", date: daysAgo(0, 9, 42), category: "rto", mine: true },
+  { caseId: "IRN-100821", type: "Challan Mgmt", amount: "₹450", status: "completed", date: daysAgo(1, 18, 14), category: "challan", mine: true },
+  { caseId: "IRN-100817", type: "Client no-show", status: "cancelled", date: daysAgo(2, 15, 0), category: "case", mine: true },
+  { caseId: "IRN-100804", type: "Traffic Challan", amount: "₹850", status: "completed", date: daysAgo(3, 11, 20), category: "challan", mine: true },
   { caseId: "IRN-100792", type: "Vehicle Transfer", amount: "₹1,200", status: "completed", date: daysAgo(4, 16, 5), category: "rto" },
-  { caseId: "IRN-100781", type: "RC Renewal", amount: "₹600", status: "completed", date: daysAgo(7, 10, 30), category: "rto" },
+  { caseId: "IRN-100781", type: "RC Renewal", amount: "₹600", status: "completed", date: daysAgo(7, 10, 30), category: "rto", mine: true },
   { caseId: "IRN-100775", type: "Client cancelled", status: "cancelled", date: daysAgo(8, 13, 0), category: "case" },
-  { caseId: "IRN-100768", type: "Accident Response", amount: "₹1,500", status: "completed", date: daysAgo(9, 20, 45), category: "case" },
+  { caseId: "IRN-100768", type: "Accident Response", amount: "₹1,500", status: "completed", date: daysAgo(9, 20, 45), category: "case", mine: true },
   { caseId: "IRN-100759", type: "Challan Mgmt", amount: "₹450", status: "completed", date: daysAgo(11, 12, 10), category: "challan" },
   { caseId: "IRN-100744", type: "Court Appearance", amount: "₹2,000", status: "completed", date: daysAgo(14, 11, 0), category: "case" },
 ];
@@ -93,9 +97,11 @@ export default function IncidentsListPage() {
   const [statusFilters, setStatusFilters] = useState<FilterStatus[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
   const [activeView, setActiveView] = useState<ActiveView>("incidents");
+  const [pastView, setPastView] = useState<PastView>("mine");
   const [bulkSheetOpen, setBulkSheetOpen] = useState(false);
   const [uploadSheetOpen, setUploadSheetOpen] = useState(false);
   const [tableSheetOpen, setTableSheetOpen] = useState(false);
+  const [disposalsSheetOpen, setDisposalsSheetOpen] = useState(false);
   const { assigned, closed } = useLeadsStore();
   const activeCount = assigned.length;
 
@@ -198,14 +204,32 @@ export default function IncidentsListPage() {
               onClick={() => setActiveView("incidents")}
               icon={LayoutList}
             >
-              By incidents
+              My Incidents
             </ViewToggleButton>
             <ViewToggleButton
               active={activeView === "batches"}
               onClick={() => setActiveView("batches")}
               icon={Package}
             >
-              By batch
+              My Batches
+            </ViewToggleButton>
+          </div>
+        )}
+        {tab === "past" && (
+          <div className="mb-3 inline-flex bg-neutral-100 rounded-xl p-1 w-full">
+            <ViewToggleButton
+              active={pastView === "mine"}
+              onClick={() => setPastView("mine")}
+              icon={LayoutList}
+            >
+              My Incidents
+            </ViewToggleButton>
+            <ViewToggleButton
+              active={pastView === "all"}
+              onClick={() => setPastView("all")}
+              icon={Package}
+            >
+              My Batches
             </ViewToggleButton>
           </div>
         )}
@@ -223,6 +247,7 @@ export default function IncidentsListPage() {
             fromDate={fromDate}
             toDate={toDate}
             category={categoryFilter}
+            view={pastView}
             onShowAll={() => {
               setFromDate("");
               setToDate("");
@@ -268,6 +293,10 @@ export default function IncidentsListPage() {
           setBulkSheetOpen(false);
           setTableSheetOpen(true);
         }}
+        onPickDisposals={() => {
+          setBulkSheetOpen(false);
+          setDisposalsSheetOpen(true);
+        }}
       />
 
       <UploadBulkSheet
@@ -279,6 +308,11 @@ export default function IncidentsListPage() {
         open={tableSheetOpen}
         onClose={() => setTableSheetOpen(false)}
         incidents={assigned}
+      />
+
+      <UploadDisposalsSheet
+        open={disposalsSheetOpen}
+        onClose={() => setDisposalsSheetOpen(false)}
       />
     </PhoneFrame>
   );
@@ -325,10 +359,8 @@ function FilterSheet({
   };
 
   const options: { value: FilterStatus; label: string }[] = [
-    { value: "alloted", label: "Alloted" },
-    { value: "inprogress", label: "In Progress" },
-    { value: "assigned", label: "Assigned" },
-    { value: "completed", label: "Completed" },
+    { value: "breaching", label: "Breaching soon" },
+    { value: "breached", label: "Breached" },
   ];
 
   return (
@@ -366,7 +398,7 @@ function FilterSheet({
         <div className="px-4 py-3 space-y-4 max-h-[60vh] overflow-y-auto no-scrollbar">
           <div>
             <div className="t-caption font-semibold text-neutral-500 mb-2">
-              Status
+              Deadline
             </div>
             <div className="flex flex-wrap gap-2">
               {options.map((o) => {
@@ -572,8 +604,32 @@ function ActivePanel({
     );
   }
 
+  const allSelected =
+    filtered.length > 0 && filtered.every((c) => selected.has(c.caseId));
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(filtered.map((c) => c.caseId)));
+    }
+  };
+
   return (
     <>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="t-caption text-neutral-500">
+          {selected.size > 0
+            ? `${selected.size} selected`
+            : `${filtered.length} incident${filtered.length === 1 ? "" : "s"}`}
+        </span>
+        <button
+          type="button"
+          onClick={toggleSelectAll}
+          className="t-caption font-semibold text-primary-600 hover:text-primary-700"
+        >
+          {allSelected ? "Clear all" : "Select all"}
+        </button>
+      </div>
       {view === "batches" ? (
         <div className="space-y-3">
           {groupBatchesWithClosed(filtered, closed, category).map((g) => (
@@ -659,15 +715,7 @@ function BatchCard({
   selected: Set<string>;
   onToggleSelect: (caseId: string) => void;
 }) {
-  const [expanded, setExpanded] = useState(true);
-  const all = [...openItems, ...closedItems];
-  const area = all.find((i) => i.area)?.area;
-  const category = all[0]?.category;
-  const minDeadline = openItems.reduce(
-    (min, i) => Math.min(min, i.deadlineDays),
-    Number.POSITIVE_INFINITY
-  );
-  const deadlineTone = minDeadline <= 7 ? "error" : "warning";
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <div className="rounded-xl bg-white shadow-e1 border border-[var(--border-default)] overflow-hidden">
@@ -677,42 +725,20 @@ function BatchCard({
         aria-expanded={expanded}
         className="w-full p-4 text-left"
       >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="t-body-lg font-semibold text-neutral-900 truncate">
-              {batchId === "UNBATCHED" ? "Unbatched" : batchId}
-            </div>
-            {area && (
-              <div className="mt-0.5 inline-flex items-center gap-1 t-caption text-neutral-500 min-w-0">
-                <MapPin size={12} className="shrink-0" />
-                <span className="truncate">{area}</span>
-              </div>
-            )}
+        <div className="flex items-center justify-between gap-3">
+          <div className="t-body-lg font-semibold text-neutral-900 truncate min-w-0">
+            {batchId === "UNBATCHED" ? "Unbatched" : batchId}
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {category && (
-              <Chip tone="neutral" size="sm">
-                {CATEGORY_LABELS[category]}
-              </Chip>
-            )}
-            {Number.isFinite(minDeadline) && (
-              <Chip tone={deadlineTone} size="sm">
-                {minDeadline}d
-              </Chip>
-            )}
-          </div>
-        </div>
-        <div className="mt-2 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1.5 shrink-0">
             <CountTag label="In progress" count={openItems.length} tone="primary" />
             <CountTag label="Closed" count={closedItems.length} tone="neutral" />
+            <ChevronRight
+              size={18}
+              className={`text-neutral-400 shrink-0 transition-transform ${
+                expanded ? "rotate-90" : ""
+              }`}
+            />
           </div>
-          <ChevronRight
-            size={16}
-            className={`text-neutral-400 shrink-0 transition-transform ${
-              expanded ? "rotate-90" : ""
-            }`}
-          />
         </div>
       </button>
       {expanded && (
@@ -868,7 +894,7 @@ function ActiveCaseCard({
   };
 
   return (
-    <div className="relative overflow-hidden rounded-xl">
+    <div className="relative overflow-hidden rounded-md">
       <button
         type="button"
         onClick={handleActionClick}
@@ -892,7 +918,7 @@ function ActiveCaseCard({
             : "transform 220ms cubic-bezier(0.2,0,0,1)",
           touchAction: "pan-y",
         }}
-        className={`relative rounded-xl bg-white shadow-e1 border p-4 select-none ${
+        className={`relative rounded-md bg-white shadow-e1 border p-4 select-none ${
           selected
             ? "border-primary-500 ring-2 ring-primary-100"
             : "border-[var(--border-default)]"
@@ -961,13 +987,13 @@ function CaseCheckbox({ checked }: { checked: boolean }) {
   return (
     <span
       aria-hidden
-      className={`mt-0.5 inline-flex w-7 h-7 rounded-lg border-2 items-center justify-center transition-colors ${
+      className={`mt-0.5 inline-flex w-5 h-5 rounded border-2 items-center justify-center transition-colors ${
         checked
           ? "bg-primary-600 border-primary-600 text-white"
           : "bg-white border-neutral-300"
       }`}
     >
-      {checked && <Check size={18} strokeWidth={3} />}
+      {checked && <Check size={14} strokeWidth={3} />}
     </span>
   );
 }
@@ -1054,19 +1080,26 @@ function PastPanel({
   fromDate,
   toDate,
   category,
+  view,
   onShowAll,
 }: {
   query: string;
   fromDate: string;
   toDate: string;
   category: CategoryFilter;
+  view: PastView;
   onShowAll: () => void;
 }) {
+  const source = useMemo(
+    () => (view === "mine" ? PAST_CASES.filter((c) => c.mine) : PAST_CASES),
+    [view]
+  );
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const from = fromDate ? new Date(fromDate + "T00:00:00") : null;
     const to = toDate ? new Date(toDate + "T23:59:59") : null;
-    return PAST_CASES.filter((c) => {
+    return source.filter((c) => {
       if (category !== "all" && c.category !== category) return false;
       if (from && c.date < from) return false;
       if (to && c.date > to) return false;
@@ -1077,14 +1110,16 @@ function PastPanel({
         c.status.includes(q)
       );
     });
-  }, [query, fromDate, toDate, category]);
+  }, [source, query, fromDate, toDate, category]);
 
-  const showingAll = filtered.length === PAST_CASES.length;
+  const showingAll = filtered.length === source.length;
 
   if (filtered.length === 0) {
     return (
       <div className="text-center py-16 t-body-sm text-neutral-400">
-        No past incidents match your filters
+        {view === "mine"
+          ? "You don't have any past incidents matching these filters"
+          : "No past incidents match your filters"}
       </div>
     );
   }
@@ -1237,11 +1272,13 @@ function BulkUpdateSheet({
   onClose,
   onPickUpload,
   onPickTable,
+  onPickDisposals,
 }: {
   open: boolean;
   onClose: () => void;
   onPickUpload: () => void;
   onPickTable: () => void;
+  onPickDisposals: () => void;
 }) {
   return (
     <SheetShell
@@ -1263,6 +1300,12 @@ function BulkUpdateSheet({
           title="Update in table"
           description="Edit professional, challan and government amounts inline."
           onClick={onPickTable}
+        />
+        <BulkOptionRow
+          icon={FolderUp}
+          title="Bulk upload disposals"
+          description="Attach disposal files — name each file after its challan number."
+          onClick={onPickDisposals}
         />
       </div>
     </SheetShell>
@@ -1404,8 +1447,184 @@ function UploadBulkSheet({
   );
 }
 
+function UploadDisposalsSheet({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const [files, setFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [done, setDone] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setFiles([]);
+      setUploading(false);
+      setDone(false);
+      setIsDragging(false);
+    }
+  }, [open]);
+
+  const addFiles = (list: FileList | null) => {
+    if (!list || list.length === 0) return;
+    const next = Array.from(list);
+    setFiles((prev) => {
+      const seen = new Set(prev.map((f) => f.name));
+      return [...prev, ...next.filter((f) => !seen.has(f.name))];
+    });
+  };
+
+  const removeFile = (name: string) => {
+    setFiles((prev) => prev.filter((f) => f.name !== name));
+  };
+
+  const handleUpload = () => {
+    if (files.length === 0) return;
+    setUploading(true);
+    window.setTimeout(() => {
+      setUploading(false);
+      setDone(true);
+    }, 1200);
+  };
+
+  return (
+    <SheetShell
+      open={open}
+      onClose={onClose}
+      title="Bulk upload disposals"
+      subtitle="Attach one disposal per challan."
+      maxHeight="auto"
+    >
+      {done ? (
+        <div className="px-4 pb-6 pt-2 text-center">
+          <div className="w-14 h-14 mx-auto rounded-full bg-success-subtle text-success-bold flex items-center justify-center mb-3">
+            <Check size={28} strokeWidth={3} />
+          </div>
+          <div className="t-body-lg font-semibold text-neutral-900">
+            Upload complete
+          </div>
+          <div className="t-caption text-neutral-500 mt-1">
+            {files.length} {files.length === 1 ? "disposal" : "disposals"}{" "}
+            uploaded successfully.
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="mt-5 w-full h-12 rounded-xl bg-primary-600 text-white t-body font-semibold hover:bg-primary-700 active:scale-[0.99] transition-all"
+          >
+            Done
+          </button>
+        </div>
+      ) : (
+        <div className="px-4 pb-8 pt-2 space-y-3">
+          <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-primary-50/70 border border-primary-100 text-primary-800">
+            <Info size={16} className="mt-0.5 shrink-0" />
+            <div className="t-caption">
+              Name each file after its challan number (e.g.{" "}
+              <span className="font-semibold">CH-100846.pdf</span>) so it maps
+              to the right incident.
+            </div>
+          </div>
+
+          <label
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDragging(false);
+              addFiles(e.dataTransfer.files);
+            }}
+            className={`relative w-full flex flex-col items-center justify-center gap-3 px-4 py-10 rounded-2xl border-2 border-dashed transition-colors text-center cursor-pointer ${
+              isDragging
+                ? "border-primary-500 bg-primary-50/60"
+                : "border-neutral-300 bg-neutral-50/60 hover:border-primary-400 hover:bg-primary-50/40"
+            } ${uploading ? "opacity-70 pointer-events-none" : ""}`}
+          >
+            <div className="w-14 h-14 rounded-2xl bg-primary-50 text-primary-700 flex items-center justify-center">
+              <FolderUp size={26} />
+            </div>
+            <div>
+              <div className="t-body-lg font-semibold text-neutral-800">
+                Drop files here
+              </div>
+              <div className="t-body-sm text-neutral-500 mt-1">
+                PDF, JPG or PNG up to 10 MB each
+              </div>
+            </div>
+            <span className="inline-flex items-center h-11 px-5 rounded-xl bg-primary-600 text-white t-body-sm font-semibold hover:bg-primary-700">
+              Choose files
+            </span>
+            <input
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png"
+              multiple
+              onChange={(e) => addFiles(e.target.files)}
+              className="sr-only"
+            />
+          </label>
+
+          {files.length > 0 && (
+            <div className="space-y-2">
+              <div className="t-caption text-neutral-500 px-1">
+                {files.length} selected
+              </div>
+              <div className="rounded-xl border border-[var(--border-default)] divide-y divide-neutral-100 overflow-hidden">
+                {files.map((f) => (
+                  <div
+                    key={f.name}
+                    className="flex items-center gap-3 px-3 py-2.5 bg-white"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-primary-50 text-primary-700 flex items-center justify-center shrink-0">
+                      <FileText size={16} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="t-body-sm font-medium text-neutral-800 truncate">
+                        {f.name}
+                      </div>
+                      <div className="t-caption text-neutral-500">
+                        {(f.size / 1024).toFixed(0)} KB
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(f.name)}
+                      aria-label={`Remove ${f.name}`}
+                      className="w-8 h-8 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 flex items-center justify-center shrink-0"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleUpload}
+            disabled={files.length === 0 || uploading}
+            className="w-full h-12 rounded-xl bg-primary-600 text-white t-body font-semibold hover:bg-primary-700 active:scale-[0.99] transition-all disabled:opacity-50 disabled:pointer-events-none"
+          >
+            {uploading
+              ? "Uploading…"
+              : files.length === 0
+              ? "Upload disposals"
+              : `Upload ${files.length} ${files.length === 1 ? "file" : "files"}`}
+          </button>
+        </div>
+      )}
+    </SheetShell>
+  );
+}
+
 type RowValues = {
-  professionalFees: string;
+  miscFees: string;
   challanAmount: string;
   professionalAmount: string;
   governmentAmount: string;
@@ -1431,7 +1650,7 @@ function UpdateInTableSheet({
     const next: Record<string, RowValues> = {};
     for (const inc of incidents) {
       next[inc.caseId] = {
-        professionalFees: "",
+        miscFees: "",
         challanAmount: "",
         professionalAmount: "",
         governmentAmount: "",
@@ -1470,8 +1689,8 @@ function UpdateInTableSheet({
             <table className="min-w-full border-collapse">
               <thead className="bg-neutral-50">
                 <tr>
-                  <Th>Incident ID</Th>
-                  <Th>Professional fees</Th>
+                  <Th>Challan number</Th>
+                  <Th>Misc fees</Th>
                   <Th>Challan amount</Th>
                   <Th>Professional amount</Th>
                   <Th>Government amount</Th>
@@ -1487,12 +1706,12 @@ function UpdateInTableSheet({
                       className="border-t border-[var(--border-subtle)]"
                     >
                       <td className="px-3 py-2 t-body-sm font-mono text-neutral-800 whitespace-nowrap bg-neutral-50/60">
-                        {inc.caseId}
+                        {inc.vehicle}
                       </td>
                       <AmountCell
-                        value={row.professionalFees}
+                        value={row.miscFees}
                         onChange={(v) =>
-                          updateCell(inc.caseId, "professionalFees", v)
+                          updateCell(inc.caseId, "miscFees", v)
                         }
                       />
                       <AmountCell
