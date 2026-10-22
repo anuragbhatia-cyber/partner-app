@@ -3,8 +3,8 @@
 import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
 import { BottomTabBar } from "@/components/BottomTabBar";
 import { CommissionCard } from "@/components/CommissionCard";
-import { Button, Chip } from "@/components/ui";
-import { MapPin, IndianRupee, Clock, Inbox } from "lucide-react";
+import { Chip } from "@/components/ui";
+import { Clock, Inbox } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -14,22 +14,11 @@ import {
   CATEGORY_TONE,
   Lead,
   LeadCategory,
-  LeadUrgency,
   skipLead,
   useLeadsStore,
 } from "@/lib/leads-store";
 
-const urgencyDeadline: Record<LeadUrgency, string> = {
-  high: "2 days",
-  medium: "5 days",
-  low: "10 days",
-};
-
 type Filter = "all" | LeadCategory;
-
-function fmtAmount(n: number) {
-  return `₹${n.toLocaleString("en-IN")}`;
-}
 
 function fmtTime(min: number) {
   if (min < 1) return "just now";
@@ -57,17 +46,21 @@ export default function LeadsPage() {
   }, [leads]);
 
   const filtered = filter === "all" ? leads : leads.filter((l) => l.category === filter);
-  const totalValue = filtered.reduce((sum, l) => sum + l.amount, 0);
 
   const handleAssign = (lead: Lead) => {
     assignLead(lead.id);
     toast.show(`${lead.type} assigned to you`);
   };
 
+  const handleReject = (lead: Lead) => {
+    skipLead(lead.id);
+    toast.show(`${lead.id} rejected`);
+  };
+
   return (
-    <PhoneFrame label="Leads">
+    <PhoneFrame label="Assignments">
       <AppBar
-        title="Leads"
+        title="Assignments"
         action={
           <span className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full bg-success-subtle">
             <span className="relative flex h-2 w-2">
@@ -84,19 +77,19 @@ export default function LeadsPage() {
       <div className="px-4 pt-4 pb-3 space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-xl bg-white border border-[var(--border-default)] shadow-e1 px-3 py-3">
-            <div className="t-body-sm font-semibold text-neutral-700">Open leads</div>
-            <div className="t-h1 font-bold tabular text-neutral-900 mt-0.5">
+            <div className="t-body-sm font-semibold text-neutral-700">Open to assign</div>
+            <div className="t-h1 font-bold tabular text-primary-600 mt-0.5">
               {filtered.length}
             </div>
           </div>
           <div className="rounded-xl bg-white border border-[var(--border-default)] shadow-e1 px-3 py-3">
-            <div className="t-body-sm font-semibold text-neutral-700">Total value</div>
-            <div className="t-h1 font-bold tabular text-success-bold mt-0.5">
-              {fmtAmount(totalValue)}
+            <div className="t-body-sm font-semibold text-neutral-700">Total batches</div>
+            <div className="t-h1 font-bold tabular text-primary-600 mt-0.5">
+              {filtered.length}
             </div>
           </div>
         </div>
-        <CommissionCard />
+        {/* <CommissionCard /> */}
       </div>
 
       <div className="sticky top-16 z-20 px-4 pt-2 pb-3 bg-[var(--surface-bg)] border-b border-[var(--border-subtle)]">
@@ -122,12 +115,17 @@ export default function LeadsPage() {
           />
         ) : (
           filtered.map((lead) => (
-            <LeadCard key={lead.id} lead={lead} onAssign={() => handleAssign(lead)} />
+            <LeadCard
+              key={lead.id}
+              lead={lead}
+              onAssign={() => handleAssign(lead)}
+              onReject={() => handleReject(lead)}
+            />
           ))
         )}
       </div>
 
-      <BottomTabBar active="leads" />
+      <BottomTabBar active="requests" />
     </PhoneFrame>
   );
 }
@@ -167,7 +165,15 @@ function FilterPill({
   );
 }
 
-function LeadCard({ lead, onAssign }: { lead: Lead; onAssign: () => void }) {
+function LeadCard({
+  lead,
+  onAssign,
+  onReject,
+}: {
+  lead: Lead;
+  onAssign: () => void;
+  onReject: () => void;
+}) {
   return (
     <div className="rounded-xl bg-white shadow-e1 border border-[var(--border-default)] overflow-hidden transition-shadow hover:shadow-e2">
       <Link
@@ -176,56 +182,55 @@ function LeadCard({ lead, onAssign }: { lead: Lead; onAssign: () => void }) {
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="t-body-lg font-semibold text-neutral-900 truncate">
-              {lead.type}
+            <div className="t-body-lg font-semibold text-neutral-900">
+              {lead.id}
             </div>
-            <div className="t-caption text-neutral-500 mt-0.5">{lead.id}</div>
           </div>
           <div className="flex items-center gap-4 shrink-0">
             <Chip tone={CATEGORY_TONE[lead.category]} size="sm">
               {CATEGORY_LABELS[lead.category]}
             </Chip>
-            <span className="t-caption font-semibold text-error">
-              {urgencyDeadline[lead.urgency]}
-            </span>
           </div>
         </div>
 
-        <p className="t-body-sm text-neutral-700 mt-2 line-clamp-2">
-          {lead.description}
-        </p>
-
-        <div className="mt-3 flex items-end justify-between gap-3">
-          <div className="min-w-0">
-            <div className="t-h1 font-extrabold tabular text-success-bold inline-flex items-center leading-none">
-              <IndianRupee size={20} className="mr-0.5" />
-              {lead.payoutRange
-                ? `${lead.payoutRange[0].toLocaleString("en-IN")} – ₹${lead.payoutRange[1].toLocaleString("en-IN")}`
-                : lead.amount.toLocaleString("en-IN")}
+        <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
+          <div>
+            <div className="t-caption text-neutral-500">
+              Number of {lead.itemLabel.toLowerCase()}
+            </div>
+            <div className="mt-0.5 t-h2 font-extrabold tabular text-neutral-800 leading-none">
+              {lead.items.length}
             </div>
           </div>
-          <div className="text-right shrink-0 space-y-1">
-            <div className="inline-flex items-center gap-1 t-body-sm font-semibold text-neutral-800">
-              <MapPin size={13} className="text-neutral-500" />
-              {lead.distanceKm} km
+          <div>
+            <div className="t-caption text-neutral-500">Accept by</div>
+            <div className="mt-0.5 t-h3 font-bold text-neutral-800 leading-none">
+              {lead.items[0]?.tatDeadline ?? "—"}
             </div>
-            <div className="t-caption text-neutral-500">{lead.area}</div>
           </div>
         </div>
       </Link>
 
-      <div className="px-4 pt-3 pb-4 border-t border-[var(--border-subtle)] flex items-center justify-between gap-3">
+      <div className="px-4 pt-3 pb-4 border-t border-[var(--border-subtle)] flex flex-col gap-3">
         <div className="inline-flex items-center gap-1 t-caption text-neutral-500">
           <Clock size={12} />
           {fmtTime(lead.postedMinAgo)}
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm" onClick={() => skipLead(lead.id)}>
-            Skip
-          </Button>
-          <Button variant="primary" size="sm" onClick={onAssign}>
-            Assign to me
-          </Button>
+          <button
+            type="button"
+            onClick={onReject}
+            className="h-11 px-5 rounded-full border border-[var(--border-default)] bg-white t-body-sm font-semibold text-neutral-900 hover:bg-neutral-50 transition-colors"
+          >
+            Reject
+          </button>
+          <button
+            type="button"
+            onClick={onAssign}
+            className="flex-1 h-11 rounded-full bg-primary-600 text-white t-body-sm font-semibold hover:bg-primary-700 active:scale-[0.99] transition-all"
+          >
+            Click to accept
+          </button>
         </div>
       </div>
     </div>
@@ -249,13 +254,13 @@ function LeadsEmpty({
   if (noneAtAll) {
     title = "You're all caught up";
     subtitle =
-      "No open leads in your area right now. New ones land here in real time.";
+      "No open assignments in your area right now. New ones land here in real time.";
   } else if (isFiltered) {
-    title = `No open ${label} leads`;
+    title = `No open ${label} assignments`;
     subtitle = "Try another category or check back in a few minutes.";
   } else {
-    title = "No open leads right now";
-    subtitle = "New leads land here as they come in.";
+    title = "No open assignments right now";
+    subtitle = "New assignments land here as they come in.";
   }
 
   return (
@@ -279,3 +284,4 @@ function LeadsEmpty({
     </div>
   );
 }
+

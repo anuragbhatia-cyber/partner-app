@@ -2,13 +2,10 @@
 
 import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
 import { Button, Card } from "@/components/ui";
-import { CommissionCard } from "@/components/CommissionCard";
-import {
-  HelpCircle,
-  ArrowUpRight,
-  ArrowDownRight,
-  ArrowDownLeft,
-} from "lucide-react";
+// import { CommissionCard } from "@/components/CommissionCard"; // hidden for now
+import { TxnRow } from "@/components/TxnRow";
+import { TRANSACTIONS } from "@/lib/wallet-store";
+import { HelpCircle } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -128,7 +125,7 @@ export default function WalletHomePage() {
           )}
         </Card>
 
-        <CommissionCard />
+        {/* <CommissionCard /> */}
 
         {/* Earnings chart with range selector */}
         <Card padding="lg">
@@ -179,30 +176,11 @@ export default function WalletHomePage() {
             </Link>
           </div>
           <div className="divide-y divide-[var(--border-subtle)] border-t border-[var(--border-subtle)]">
-            <TxnRow
-              type="earning"
-              title="Challan IRN-100842"
-              date="Aug 3"
-              amount="+₹850"
-            />
-            <TxnRow
-              type="payout"
-              title="Payout to HDFC ****4521"
-              date="Aug 2"
-              amount="-₹8,000"
-            />
-            <TxnRow
-              type="earning"
-              title="RTO IRN-100838"
-              date="Aug 2"
-              amount="+₹700"
-            />
-            <TxnRow
-              type="deduction"
-              title="TDS on ₹850"
-              date="Aug 1"
-              amount="-₹85"
-            />
+            {TRANSACTIONS.filter((t) => t.day !== "Today")
+              .slice(0, 4)
+              .map((t) => (
+                <TxnRow key={t.id} txn={t} />
+              ))}
           </div>
         </Card>
       </div>
@@ -211,69 +189,6 @@ export default function WalletHomePage() {
   );
 }
 
-function TxnRow({
-  type,
-  title,
-  date,
-  amount,
-  status,
-}: {
-  type: "earning" | "payout" | "deduction";
-  title: string;
-  date: string;
-  amount: string;
-  status?: string;
-}) {
-  const config = {
-    earning: {
-      icon: ArrowUpRight,
-      bg: "bg-success-subtle",
-      color: "text-success-bold",
-      amountColor: "text-success-bold",
-    },
-    payout: {
-      icon: ArrowDownLeft,
-      bg: "bg-error-subtle",
-      color: "text-error-bold",
-      amountColor: "text-error-bold",
-    },
-    deduction: {
-      icon: ArrowDownRight,
-      bg: "bg-error-subtle",
-      color: "text-error-bold",
-      amountColor: "text-error-bold",
-    },
-  }[type];
-  const Icon = config.icon;
-  return (
-    <div className="flex items-center gap-3 px-4 py-3">
-      <div
-        className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${config.bg}`}
-      >
-        <Icon size={14} className={config.color} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="t-body font-medium text-neutral-800 truncate">
-          {title}
-        </div>
-        <div className="flex items-center gap-2 mt-0.5">
-          <span className="t-caption text-neutral-500">{date}</span>
-          {status && (
-            <>
-              <span className="t-caption text-neutral-300">·</span>
-              <span className="t-caption text-neutral-500">{status}</span>
-            </>
-          )}
-        </div>
-      </div>
-      <div
-        className={`t-body font-semibold tabular font-mono shrink-0 ${config.amountColor}`}
-      >
-        {amount}
-      </div>
-    </div>
-  );
-}
 
 function EarningsChart({
   bars,

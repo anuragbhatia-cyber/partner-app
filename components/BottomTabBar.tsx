@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Home, ClipboardList, Users, User } from "lucide-react";
+import { Home, ClipboardList, MessageSquare, Inbox } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLeadsStore } from "@/lib/leads-store";
 
@@ -15,9 +15,9 @@ interface Tab {
 
 const BASE_TABS: Omit<Tab, "badge">[] = [
   { key: "home", label: "Home", href: "/home", icon: Home },
-  { key: "leads", label: "Leads", href: "/leads", icon: Users },
+  { key: "requests", label: "Assignments", href: "/leads", icon: Inbox },
+  { key: "chats", label: "Chats", href: "/chats", icon: MessageSquare },
   { key: "incidents", label: "Incidents", href: "/incidents", icon: ClipboardList },
-  { key: "profile", label: "Profile", href: "/profile", icon: User },
 ];
 
 function formatBadge(n: number): string {
@@ -27,11 +27,10 @@ function formatBadge(n: number): string {
 }
 
 export function BottomTabBar({ active }: { active: string }) {
-  const { leads, assigned } = useLeadsStore();
-  // Show a dot when there are new leads, but no number.
-  const showLeadsDot = leads.length > 0;
+  const { assigned } = useLeadsStore();
   const badges: Record<string, number> = {
     incidents: assigned.length,
+    chats: assigned.length,
   };
 
   return (
@@ -59,7 +58,7 @@ export function BottomTabBar({ active }: { active: string }) {
                 />
               )}
               <div className="relative">
-                <Icon size={28} />
+                <Icon size={22} />
                 {badgeLabel && (
                   <span
                     aria-label={`${badgeLabel} unread`}
@@ -67,12 +66,6 @@ export function BottomTabBar({ active }: { active: string }) {
                   >
                     {badgeLabel}
                   </span>
-                )}
-                {tab.key === "leads" && showLeadsDot && !badgeLabel && (
-                  <span
-                    aria-label="New leads available"
-                    className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-error ring-2 ring-white"
-                  />
                 )}
               </div>
               <span

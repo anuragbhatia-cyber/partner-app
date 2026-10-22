@@ -2,7 +2,7 @@
 
 import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
 import { Button, Card, Chip, SectionLabel } from "@/components/ui";
-import { Landmark, ShieldCheck, User, Hash, Building2, MapPin, X } from "lucide-react";
+import { Landmark, ShieldCheck, User, Hash, Building2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 type BankAccount = {
@@ -10,7 +10,6 @@ type BankAccount = {
   last4: string;
   accountHolder: string;
   ifsc: string;
-  branch: string;
 };
 
 const INITIAL_ACCOUNT: BankAccount = {
@@ -18,7 +17,6 @@ const INITIAL_ACCOUNT: BankAccount = {
   last4: "4521",
   accountHolder: "Priya Sharma",
   ifsc: "HDFC0000456",
-  branch: "MG Road, Bengaluru",
 };
 
 export default function ProfileBankPage() {
@@ -52,21 +50,20 @@ export default function ProfileBankPage() {
           <div className="space-y-2 pt-3 border-t border-[var(--border-subtle)]">
             <Row label="Account holder" value={account.accountHolder} />
             <Row label="IFSC" value={account.ifsc} mono />
-            <Row label="Branch" value={account.branch} />
           </div>
         </Card>
 
         <Card className="bg-info-subtle border-info/20 flex items-start gap-2.5">
           <ShieldCheck size={16} className="text-info-bold shrink-0 mt-0.5" />
           <div className="t-body-sm text-info-bold leading-relaxed">
-            Payouts are processed via NEFT and typically settle within 1 working day.
+            Payouts are processed via NEFT and typically settle within 3–4 working days.
           </div>
         </Card>
       </div>
 
       <div className="sticky bottom-0 z-20 mt-auto bg-white/95 backdrop-blur border-t border-[var(--border-subtle)] px-4 pt-3 pb-4 flex gap-2">
         <Button
-          variant="secondary"
+          variant="primary"
           size="lg"
           fullWidth
           onClick={() => setSheetOpen(true)}
@@ -129,7 +126,6 @@ function BankFormSheet({
   const [confirmAccountNumber, setConfirmAccountNumber] = useState("");
   const [ifsc, setIfsc] = useState(initial.ifsc);
   const [bankName, setBankName] = useState(initial.bankName);
-  const [branch, setBranch] = useState(initial.branch);
 
   useEffect(() => {
     if (open) {
@@ -138,7 +134,6 @@ function BankFormSheet({
       setConfirmAccountNumber("");
       setIfsc(initial.ifsc);
       setBankName(initial.bankName);
-      setBranch(initial.branch);
     }
   }, [open, initial]);
 
@@ -149,8 +144,7 @@ function BankFormSheet({
     accountNumber.length >= 9 &&
     matches &&
     ifsc.trim().length === 11 &&
-    bankName.trim().length > 0 &&
-    branch.trim().length > 0;
+    bankName.trim().length > 0;
 
   const handleSubmit = () => {
     if (!canSubmit) return;
@@ -159,7 +153,6 @@ function BankFormSheet({
       last4: accountNumber.slice(-4),
       accountHolder: accountHolder.trim(),
       ifsc: ifsc.trim().toUpperCase(),
-      branch: branch.trim(),
     });
   };
 
@@ -188,9 +181,6 @@ function BankFormSheet({
           <div>
             <div className="t-h3 font-bold text-neutral-800">
               Change bank account
-            </div>
-            <div className="t-caption text-neutral-500 mt-0.5">
-              Payouts will move to the new account after verification.
             </div>
           </div>
           <button
@@ -293,26 +283,6 @@ function BankFormSheet({
             />
           </Field>
 
-          <Field
-            label="Branch"
-            required
-            icon={<MapPin size={14} className="text-neutral-400" />}
-          >
-            <input
-              value={branch}
-              onChange={(e) => setBranch(e.target.value)}
-              placeholder="e.g. MG Road, Bengaluru"
-              className="w-full h-11 pl-9 pr-3 rounded-lg border border-[var(--border-default)] bg-white t-body text-neutral-800 focus:outline-none focus:border-primary-500 placeholder:text-neutral-400"
-            />
-          </Field>
-
-          <div className="rounded-lg bg-info-subtle border border-info/20 p-3 flex items-start gap-2">
-            <ShieldCheck size={14} className="text-info-bold shrink-0 mt-0.5" />
-            <div className="t-caption text-info-bold leading-relaxed">
-              We&apos;ll send a ₹1 test deposit to verify the account before
-              your next payout.
-            </div>
-          </div>
         </div>
 
         <div className="px-4 pt-3 pb-5 border-t border-[var(--border-subtle)] shrink-0 flex gap-2">

@@ -2,24 +2,63 @@ const KEY = "lp_partner_onboarding";
 
 export type AccountType = "individual" | "business";
 export type Role = "lawyer" | "rto";
+export type Gender = "male" | "female" | "other";
+
+export type Address = {
+  line?: string;
+  area?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  country?: string;
+};
+
+export type Qualification = {
+  id: string;
+  degree?: string;
+  university?: string;
+  yearOfCompletion?: string;
+  percentage?: string;
+};
+
+export type Experience = {
+  id: string;
+  company?: string;
+  role?: string;
+  startDate?: string;
+  endDate?: string;
+  functionalArea?: string;
+};
 
 export type OnboardingState = {
   accountType?: AccountType;
   roles?: Role[];
+  expertise?: string[];
   personal?: {
-    name?: string;
-    dob?: string;
+    photo?: string;
+    firstName?: string;
+    lastName?: string;
     email?: string;
+    mobile?: string;
+    gender?: Gender;
+    dob?: string;
+    currentAddress?: Address;
+    permanentSameAsCurrent?: boolean;
+    permanentAddress?: Address;
+    // legacy — retained so older stored records still deserialise
+    name?: string;
     pincode?: string;
     address?: string;
-    photo?: string;
   };
   business?: {
+    businessType?: string;
     companyName?: string;
     gstin?: string;
     pincode?: string;
     address?: string;
   };
+  qualifications?: Qualification[];
+  experiences?: Experience[];
 };
 
 export function getOnboarding(): OnboardingState {

@@ -17,7 +17,6 @@ import {
   IndianRupee,
   Siren,
   ShieldCheck,
-  Sparkles,
   BookOpen,
   UserPlus,
   CalendarCheck2,
@@ -176,9 +175,8 @@ export default function HomeIdlePage() {
   const selectedAreas = AREAS.filter((a) => areaIds.includes(a.id));
   const primaryArea = selectedAreas[0] ?? AREAS[0];
   const extraCount = Math.max(0, selectedAreas.length - 1);
-  const { leads, assigned } = useLeadsStore();
+  const { assigned } = useLeadsStore();
   const activeCount = assigned.length;
-  const leadsCount = leads.length;
   const offlineLinkRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
@@ -245,9 +243,13 @@ export default function HomeIdlePage() {
       {/* Dark hero section — wraps app bar + earnings card */}
       <section className="bg-black rounded-b-3xl pb-5">
         <header className="px-4 min-h-16 py-3 flex items-center gap-3">
-          <div className="w-11 h-11 rounded-full bg-neutral-900 shrink-0 ring-2 ring-white/20 flex items-center justify-center text-white t-body-lg font-semibold">
+          <Link
+            href="/profile"
+            aria-label="Open profile"
+            className="w-11 h-11 rounded-full bg-neutral-900 shrink-0 ring-2 ring-white/20 flex items-center justify-center text-white t-body-lg font-semibold hover:ring-white/40 transition-shadow"
+          >
             P
-          </div>
+          </Link>
           <div className="flex-1 min-w-0">
             <div className="t-body-lg font-semibold text-white truncate leading-tight">
               Hi Priya
@@ -327,40 +329,10 @@ export default function HomeIdlePage() {
               <ChevronRight size={18} className="text-neutral-600 shrink-0" />
             </Link>
           </div>
-          <Link
-            href="/leads"
-            className="mt-3 flex items-center gap-3 rounded-2xl bg-neutral-800 ring-1 ring-white/10 px-5 py-2.5 shadow-e1 hover:bg-neutral-700 transition-colors"
-          >
-            <span
-              aria-hidden
-              className="relative flex h-3 w-3 shrink-0"
-            >
-              <span className="absolute inline-flex h-full w-full rounded-full bg-success opacity-75 animate-ping" />
-              <span className="relative inline-flex h-3 w-3 rounded-full bg-success" />
-            </span>
-            <div className="flex-1 min-w-0 t-body-lg font-semibold text-white">
-              {leadsCount} New Lead{leadsCount === 1 ? "" : "s"}
-            </div>
-            <span className="t-micro font-bold uppercase tracking-wider text-[#4ade80] shrink-0">
-              Live
-            </span>
-            <ChevronRight size={18} className="text-white/60 shrink-0" />
-          </Link>
         </div>
       </section>
 
       <div className="px-4 pt-5 pb-24 space-y-6">
-        {/* Quick actions */}
-        <section>
-          <h2 className="t-h3 font-bold text-neutral-900 mb-3">Quick Access</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <QuickAction icon={Users} label="My Team" href="/teams" />
-            <QuickAction icon={Phone} label="Support" href="/profile/support" />
-            <QuickAction icon={Sparkles} label="AI Expert" href="/ai" />
-            <QuickAction icon={BookOpen} label="Knowledge Base" href="/knowledge" />
-          </div>
-        </section>
-
         {/* Incidents summary */}
         <section>
           <div className="flex items-center justify-between mb-3">
@@ -390,9 +362,19 @@ export default function HomeIdlePage() {
 
         {/* Today's work */}
         <section>
-          <h2 className="t-h3 font-bold text-neutral-900 mb-3">
-            Today&apos;s work
-          </h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="t-h3 font-bold text-neutral-900">
+              Today&apos;s work
+            </h2>
+            {filteredToday.length > 3 && (
+              <Link
+                href="/incidents/active"
+                className="t-body-sm font-semibold text-primary-600 hover:text-primary-700 inline-flex items-center gap-0.5"
+              >
+                View all <ChevronRight size={14} />
+              </Link>
+            )}
+          </div>
           <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 pb-3">
             {(["all", "case", "challan", "rto"] as TodayFilter[]).map((f) => (
               <FilterPill
@@ -411,11 +393,21 @@ export default function HomeIdlePage() {
             />
           ) : (
             <div className="space-y-3">
-              {filteredToday.map((c, i) => (
+              {filteredToday.slice(0, 3).map((c, i) => (
                 <TodayCaseCard key={i} caseItem={c} />
               ))}
             </div>
           )}
+        </section>
+
+        {/* Quick actions */}
+        <section>
+          <h2 className="t-h3 font-bold text-neutral-900 mb-3">Quick Access</h2>
+          <div className="grid grid-cols-3 gap-3">
+            <QuickAction icon={Users} label="My Team" href="/teams" />
+            <QuickAction icon={Phone} label="Support" href="/profile/support" />
+            <QuickAction icon={BookOpen} label="Knowledge Base" href="/knowledge" />
+          </div>
         </section>
       </div>
 
@@ -708,11 +700,6 @@ function LocationPickerSheet({
             <div className="t-h3 font-bold text-neutral-800">
               Working areas
             </div>
-            <div className="t-caption text-neutral-700 mt-0.5">
-              {selectedIds.length > 0
-                ? `${selectedIds.length} selected · you'll only receive cases from these`
-                : "Pick one or more · you'll only receive cases from these"}
-            </div>
           </div>
           <button
             type="button"
@@ -840,12 +827,12 @@ function QuickAction({
   return (
     <Link
       href={href}
-      className="flex items-center gap-2 px-2.5 py-2.5 rounded-xl border border-[var(--border-default)] bg-white shadow-e1 hover:border-primary-300 hover:bg-primary-50/30 transition-colors min-w-0"
+      className="flex flex-col items-center gap-2 px-2 py-3 rounded-xl border border-[var(--border-default)] bg-white shadow-e1 hover:border-primary-300 hover:bg-primary-50/30 transition-colors min-w-0 text-center"
     >
-      <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center text-primary-700 shrink-0">
-        <Icon size={16} />
+      <div className="w-9 h-9 rounded-lg bg-primary-100 flex items-center justify-center text-primary-700 shrink-0">
+        <Icon size={18} />
       </div>
-      <span className="t-body-sm font-semibold text-neutral-800 whitespace-nowrap">
+      <span className="t-body-sm font-semibold text-neutral-800 leading-tight">
         {label}
       </span>
     </Link>
@@ -940,8 +927,8 @@ function TodayEmpty({
       </h3>
       <p className="t-body-sm text-neutral-500 mt-1 max-w-[260px] mx-auto">
         {isFiltered
-          ? "Try another category or browse open leads in your area."
-          : "New cases will land here as they come in. In the meantime, check the live leads."}
+          ? "Try another category or browse open assignments in your area."
+          : "New cases will land here as they come in. In the meantime, check the live assignments."}
       </p>
       <div className="mt-4 flex items-center justify-center gap-2">
         {isFiltered && (
@@ -957,7 +944,7 @@ function TodayEmpty({
           href="/leads"
           className="h-9 px-3.5 inline-flex items-center gap-1 rounded-full bg-primary-600 text-white t-body-sm font-semibold hover:bg-primary-700"
         >
-          Browse leads
+          Browse assignments
           <ChevronRight size={14} />
         </Link>
       </div>

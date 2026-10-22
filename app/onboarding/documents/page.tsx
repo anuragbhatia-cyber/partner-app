@@ -20,7 +20,7 @@ import {
   type Role,
 } from "@/lib/onboarding-store";
 
-type DocKey = "aadhaar" | "pan" | "bar" | "selfie";
+type DocKey = "aadhaar" | "pan" | "bar";
 type SourceKind = "camera" | "gallery" | "pdf";
 
 type Doc = {
@@ -39,7 +39,6 @@ export default function DocumentsHubPage() {
     { key: "aadhaar", title: "Aadhaar Card", note: "Front + Back", done: true, filename: "aadhaar.pdf" },
     { key: "pan", title: "PAN Card", done: true, filename: "pan.jpg" },
     { key: "bar", title: "Bar Council ID", done: false },
-    { key: "selfie", title: "Selfie", done: false },
   ]);
   const [active, setActive] = useState<DocKey | null>(null);
   const [agreementConsent, setAgreementConsent] = useState(false);
@@ -58,8 +57,7 @@ export default function DocumentsHubPage() {
     ? docs
     : docs.filter((d) => d.key !== "bar");
 
-  const backHref =
-    accountType === "business" ? "/onboarding/business" : "/onboarding/personal";
+  const backHref = "/onboarding/personal";
   const steps = getOnboardingSteps(accountType);
 
   const activeDoc = visibleDocs.find((d) => d.key === active) ?? null;
@@ -491,13 +489,13 @@ function ConsentRow({
         aria-checked={checked}
         onClick={toggle}
         aria-label={checked ? "Uncheck consent" : "Check consent"}
-        className={`w-5 h-5 mt-0.5 rounded-md flex items-center justify-center shrink-0 transition-all ${
+        className={`w-6 h-6 mt-0.5 rounded-md flex items-center justify-center shrink-0 transition-all ${
           checked
             ? "bg-primary-600 text-white"
             : "border-2 border-neutral-300 bg-white"
         }`}
       >
-        {checked && <Check size={12} strokeWidth={3} />}
+        {checked && <Check size={16} strokeWidth={3} />}
       </button>
       <span
         role="presentation"

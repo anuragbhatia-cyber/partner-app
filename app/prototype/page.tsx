@@ -22,11 +22,14 @@ import {
   Users,
   X,
   Menu,
+  MessageSquare,
   Sparkles,
 } from "lucide-react";
 import { PhoneShell, PhoneFrameProvider } from "@/components/PhoneFrame";
 import { cn } from "@/lib/utils";
 import { setPreviewLeadId } from "@/lib/leads-store";
+import { setPreviewTxnId } from "@/lib/wallet-store";
+import { requestOpenChatOnIncident } from "@/lib/chat-nav";
 
 /* Import every screen. Nested PhoneFrames in each page become no-op
    because PhoneShell puts them inside PhoneFrameProvider (context flag). */
@@ -35,6 +38,7 @@ import RolePage from "@/app/role/page";
 import OtpPage from "@/app/otp/page";
 import SessionExpiredPage from "@/app/auth/session-expired/page";
 import AccountTypePage from "@/app/account-type/page";
+import OnboardingExpertisePage from "@/app/onboarding/expertise/page";
 import OnboardingPersonalPage from "@/app/onboarding/personal/page";
 import OnboardingBusinessPage from "@/app/onboarding/business/page";
 import OnboardingDocumentsPage from "@/app/onboarding/documents/page";
@@ -45,6 +49,7 @@ import HomeIncomingPage from "@/app/home/incoming/page";
 import HomeOfflinePage from "@/app/home/offline/page";
 import IncidentsPage from "@/app/incidents/page";
 import LeadsPage from "@/app/leads/page";
+import ChatsPage from "@/app/chats/page";
 import LeadDetailPage from "@/app/leads/[id]/page";
 import TeamsPage from "@/app/teams/page";
 import AiExpertPage from "@/app/ai/page";
@@ -53,9 +58,12 @@ import IncidentPreDeparturePage from "@/app/incidents/predeparture/page";
 import IncidentEnRoutePage from "@/app/incidents/enroute/page";
 import IncidentActivePage from "@/app/incidents/active/page";
 import IncidentCompletePage from "@/app/incidents/complete/page";
+import IncidentCompletedPage from "@/app/incidents/completed/page";
+import IncidentCancelledPage from "@/app/incidents/cancelled/page";
 import IncidentHistoryPage from "@/app/incidents/history/page";
 import WalletPage from "@/app/wallet/page";
 import WalletTransactionsPage from "@/app/wallet/transactions/page";
+import WalletTransactionDetailPage from "@/app/wallet/transactions/[id]/page";
 import WalletPayoutPage from "@/app/wallet/payout/page";
 import NotificationsPage from "@/app/notifications/page";
 import ProfilePage from "@/app/profile/page";
@@ -68,23 +76,25 @@ import ProfileProfessionalPage from "@/app/profile/professional/page";
 import ProfileBankPage from "@/app/profile/bank/page";
 import ProfileLanguagesPage from "@/app/profile/languages/page";
 import ProfileSupportChatPage from "@/app/profile/support/chat/page";
-import ProfileSupportFaqPage from "@/app/profile/support/faq/[topic]/page";
+import ProfileSupportFaqPaymentPage from "@/app/profile/support/faq/payment/page";
+import ProfileSupportFaqCasesPage from "@/app/profile/support/faq/cases/page";
 
 type ScreenKey =
   | "splash" | "account-type" | "role" | "otp" | "session-expired"
-  | "onboarding-personal" | "onboarding-business" | "onboarding-documents"
+  | "onboarding-expertise" | "onboarding-personal" | "onboarding-business" | "onboarding-documents"
   | "onboarding-kyc-status"
   | "home" | "home-active" | "home-incoming" | "home-offline"
   | "leads" | "lead-detail"
+  | "chats"
   | "teams"
   | "ai"
   | "knowledge"
   | "incidents" | "incidents-predeparture" | "incidents-enroute"
-  | "incidents-active" | "incidents-complete" | "incidents-history"
-  | "wallet" | "wallet-transactions" | "wallet-payout"
+  | "incidents-active" | "incidents-complete" | "incidents-completed" | "incidents-cancelled" | "incidents-history"
+  | "wallet" | "wallet-transactions" | "wallet-transaction-detail" | "wallet-payout"
   | "notifications"
   | "profile" | "profile-availability" | "profile-documents"
-  | "profile-support" | "profile-support-chat" | "profile-support-faq"
+  | "profile-support" | "profile-support-chat" | "profile-support-faq-payment" | "profile-support-faq-cases"
   | "profile-settings"
   | "profile-personal-info" | "profile-professional"
   | "profile-bank" | "profile-languages";
@@ -103,6 +113,7 @@ const SCREENS: ScreenDef[] = [
   { key: "account-type", title: "Account Type", section: "auth", path: "/account-type", Component: AccountTypePage },
   { key: "role", title: "Role Select", section: "auth", path: "/role", Component: RolePage },
   { key: "session-expired", title: "Session Expired", section: "auth", path: "/auth/session-expired", Component: SessionExpiredPage },
+  { key: "onboarding-expertise", title: "Expertise", section: "onboard", path: "/onboarding/expertise", Component: OnboardingExpertisePage },
   { key: "onboarding-personal", title: "Personal", section: "onboard", path: "/onboarding/personal", Component: OnboardingPersonalPage },
   { key: "onboarding-business", title: "Business", section: "onboard", path: "/onboarding/business", Component: OnboardingBusinessPage },
   { key: "onboarding-documents", title: "Documents", section: "onboard", path: "/onboarding/documents", Component: OnboardingDocumentsPage },
@@ -111,8 +122,9 @@ const SCREENS: ScreenDef[] = [
   { key: "home-active", title: "Home · Active", section: "home", path: "/home/active", Component: HomeActivePage },
   { key: "home-incoming", title: "Incoming ⚡", section: "home", path: "/home/incoming", Component: HomeIncomingPage },
   { key: "home-offline", title: "Home · Offline", section: "home", path: "/home/offline", Component: HomeOfflinePage },
-  { key: "leads", title: "Leads", section: "leads", path: "/leads", Component: LeadsPage },
-  { key: "lead-detail", title: "Lead Detail", section: "leads", path: "/leads/detail", Component: LeadDetailPage },
+  { key: "leads", title: "Assignments", section: "leads", path: "/leads", Component: LeadsPage },
+  { key: "lead-detail", title: "Assignment Detail", section: "leads", path: "/leads/detail", Component: LeadDetailPage },
+  { key: "chats", title: "Chats", section: "chats", path: "/chats", Component: ChatsPage },
   { key: "teams", title: "My Team", section: "home", path: "/teams", Component: TeamsPage },
   { key: "ai", title: "AI Expert", section: "home", path: "/ai", Component: AiExpertPage },
   { key: "knowledge", title: "Knowledge Base", section: "home", path: "/knowledge", Component: KnowledgeBasePage },
@@ -121,9 +133,12 @@ const SCREENS: ScreenDef[] = [
   { key: "incidents-enroute", title: "En Route", section: "incidents", path: "/incidents/enroute", Component: IncidentEnRoutePage },
   { key: "incidents-active", title: "In Progress", section: "incidents", path: "/incidents/active", Component: IncidentActivePage },
   { key: "incidents-complete", title: "Complete", section: "incidents", path: "/incidents/complete", Component: IncidentCompletePage },
+  { key: "incidents-completed", title: "Completed", section: "incidents", path: "/incidents/completed", Component: IncidentCompletedPage },
+  { key: "incidents-cancelled", title: "Cancelled", section: "incidents", path: "/incidents/cancelled", Component: IncidentCancelledPage },
   { key: "incidents-history", title: "History", section: "incidents", path: "/incidents/history", Component: IncidentHistoryPage },
   { key: "wallet", title: "Wallet", section: "wallet", path: "/wallet", Component: WalletPage },
   { key: "wallet-transactions", title: "Transactions", section: "wallet", path: "/wallet/transactions", Component: WalletTransactionsPage },
+  { key: "wallet-transaction-detail", title: "Transaction Detail", section: "wallet", path: "/wallet/transactions/detail", Component: WalletTransactionDetailPage },
   { key: "wallet-payout", title: "Payout", section: "wallet", path: "/wallet/payout", Component: WalletPayoutPage },
   { key: "notifications", title: "Notifications", section: "notifications", path: "/notifications", Component: NotificationsPage },
   { key: "profile", title: "Profile", section: "profile", path: "/profile", Component: ProfilePage },
@@ -135,7 +150,8 @@ const SCREENS: ScreenDef[] = [
   { key: "profile-availability", title: "Availability", section: "profile", path: "/profile/availability", Component: ProfileAvailabilityPage },
   { key: "profile-support", title: "Support", section: "profile", path: "/profile/support", Component: ProfileSupportPage },
   { key: "profile-support-chat", title: "Support · Chat", section: "profile", path: "/profile/support/chat", Component: ProfileSupportChatPage },
-  { key: "profile-support-faq", title: "Support · Payment FAQ", section: "profile", path: "/profile/support/faq/payment", Component: ProfileSupportFaqPage },
+  { key: "profile-support-faq-payment", title: "Support · Payment FAQ", section: "profile", path: "/profile/support/faq/payment", Component: ProfileSupportFaqPaymentPage },
+  { key: "profile-support-faq-cases", title: "Support · Cases FAQ", section: "profile", path: "/profile/support/faq/cases", Component: ProfileSupportFaqCasesPage },
   { key: "profile-settings", title: "Settings", section: "profile", path: "/profile/settings", Component: ProfileSettingsPage },
 ];
 
@@ -143,7 +159,8 @@ const SECTIONS = [
   { key: "auth", title: "Auth", icon: UserPlus },
   { key: "onboard", title: "Onboarding", icon: UserPlus },
   { key: "home", title: "Home", icon: HomeIcon },
-  { key: "leads", title: "Leads", icon: Users },
+  { key: "leads", title: "Assignments", icon: Users },
+  { key: "chats", title: "Chats", icon: MessageSquare },
   { key: "incidents", title: "Incidents", icon: ClipboardList },
   { key: "wallet", title: "Wallet", icon: WalletIcon },
   { key: "notifications", title: "Alerts", icon: Bell },
@@ -232,7 +249,22 @@ export default function PrototypePlayer() {
         navigate("lead-detail");
         return;
       }
-      const key = pathMap[href];
+      const txnMatch = href.match(/^\/wallet\/transactions\/([^/?#]+)$/);
+      if (txnMatch) {
+        e.preventDefault();
+        setPreviewTxnId(decodeURIComponent(txnMatch[1]));
+        navigate("wallet-transaction-detail");
+        return;
+      }
+      const chatMatch = href.match(/^\/chats\/([^/]+)\/open$/);
+      if (chatMatch) {
+        e.preventDefault();
+        requestOpenChatOnIncident(decodeURIComponent(chatMatch[1]));
+        navigate("incidents-active");
+        return;
+      }
+      const pathname = href.split("?")[0].split("#")[0];
+      const key = pathMap[pathname];
       if (key) {
         e.preventDefault();
         navigate(key);

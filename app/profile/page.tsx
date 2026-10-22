@@ -12,7 +12,6 @@ import {
   Globe,
   MessageCircle,
   Sliders,
-  Star,
   MapPin,
   Camera,
   Image as ImageIcon,
@@ -151,11 +150,6 @@ export default function ProfileHomePage() {
             <span>Bengaluru</span>
           </div>
           <div className="flex items-center justify-center gap-3 mt-3 t-body-sm">
-            <div className="flex items-center gap-1">
-              <Star size={14} className="text-accent-500 fill-accent-500" />
-              <span className="font-semibold text-neutral-800">4.8</span>
-            </div>
-            <span className="text-neutral-300">·</span>
             <span className="text-neutral-500">34 cases</span>
           </div>
         </Card>

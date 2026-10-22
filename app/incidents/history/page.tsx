@@ -6,7 +6,7 @@ import { Search, ChevronRight, Download, Inbox } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
-type HistoryStatus = "completed" | "cancelled";
+type HistoryStatus = "completed" | "cancelled" | "under-review";
 type FilterKey = "all" | HistoryStatus;
 
 type HistoryItem = {
@@ -19,6 +19,7 @@ type HistoryItem = {
 };
 
 const HISTORY: HistoryItem[] = [
+  { date: "Today", time: "11:40", id: "IRN-100845", type: "Challan Dispute", amount: "₹900", status: "under-review" },
   { date: "Aug 3", time: "10:24", id: "IRN-100842", type: "Challan", amount: "₹850", status: "completed" },
   { date: "Aug 2", time: "14:12", id: "IRN-100838", type: "RTO Renewal", amount: "₹700", status: "completed" },
   { date: "Aug 2", time: "09:30", id: "IRN-100834", type: "Challan Dispute", amount: "₹450", status: "completed" },
@@ -61,11 +62,18 @@ export default function IncidentHistoryPage() {
   const counts = useMemo(() => {
     let completed = 0;
     let cancelled = 0;
+    let underReview = 0;
     for (const h of HISTORY) {
       if (h.status === "completed") completed += 1;
-      else cancelled += 1;
+      else if (h.status === "cancelled") cancelled += 1;
+      else underReview += 1;
     }
-    return { all: HISTORY.length, completed, cancelled };
+    return {
+      all: HISTORY.length,
+      completed,
+      cancelled,
+      "under-review": underReview,
+    };
   }, []);
 
   const filtered = useMemo(
@@ -111,6 +119,12 @@ export default function IncidentHistoryPage() {
             onClick={() => setFilter("all")}
             label="All"
             count={counts.all}
+          />
+          <FilterPill
+            active={filter === "under-review"}
+            onClick={() => setFilter("under-review")}
+            label="Under Review"
+            count={counts["under-review"]}
           />
           <FilterPill
             active={filter === "completed"}
@@ -159,8 +173,10 @@ export default function IncidentHistoryPage() {
                   <div className="flex items-center gap-2 mb-1">
                     {h.status === "completed" ? (
                       <Chip tone="success" size="sm">✓ Completed</Chip>
-                    ) : (
+                    ) : h.status === "cancelled" ? (
                       <Chip tone="error" size="sm">✕ Cancelled</Chip>
+                    ) : (
+                      <Chip tone="warning" size="sm">⏱ Under Review</Chip>
                     )}
                     <span className="t-caption text-neutral-400">
                       · {h.date}, {h.time}
@@ -187,6 +203,10 @@ export default function IncidentHistoryPage() {
                       <Download size={12} />
                       Receipt
                     </button>
+                  ) : h.status === "under-review" ? (
+                    <span className="t-caption font-medium text-warning-bold">
+                      Pending
+                    </span>
                   ) : (
                     <ChevronRight size={16} className="text-neutral-300" />
                   )}

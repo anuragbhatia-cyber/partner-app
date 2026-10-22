@@ -1,22 +1,134 @@
 "use client";
 
 import { PhoneFrame, AppBar } from "@/components/PhoneFrame";
-import { Button, Card } from "@/components/ui";
-import { AlertCircle, ShieldCheck, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { getProfile, setProfile, type Profile } from "@/lib/profile-store";
+import { Button } from "@/components/ui";
+import {
+  AlertCircle,
+  Check,
+  ChevronDown,
+  Home,
+  MapPin,
+  ShieldCheck,
+  User,
+  X,
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  getProfile,
+  setProfile,
+  type Address,
+  type Gender,
+  type Profile,
+} from "@/lib/profile-store";
 import { useToast } from "@/components/Toast";
 
 const DEMO_OTP = "1234";
 
-export default function ProfilePersonalInfoPage() {
-  const [form, setForm] = useState<Profile>({
-    fullName: "",
+type PersonalFields = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  mobile: string;
+  gender: Gender | "";
+  dob: string;
+};
+
+type AddressFields = {
+  line: string;
+  area: string;
+  city: string;
+  state: string;
+  pincode: string;
+  country: string;
+};
+
+type Fields = {
+  personal: PersonalFields;
+  currentAddress: AddressFields;
+  permanentSameAsCurrent: boolean;
+  permanentAddress: AddressFields;
+};
+
+const EMPTY_ADDRESS: AddressFields = {
+  line: "",
+  area: "",
+  city: "",
+  state: "",
+  pincode: "",
+  country: "India",
+};
+
+const EMPTY_FIELDS: Fields = {
+  personal: {
+    firstName: "",
+    lastName: "",
     email: "",
-    phone: "",
+    mobile: "",
+    gender: "",
     dob: "",
-  });
-  const [initial, setInitial] = useState<Profile>(form);
+  },
+  currentAddress: EMPTY_ADDRESS,
+  permanentSameAsCurrent: false,
+  permanentAddress: EMPTY_ADDRESS,
+};
+
+type TouchedPersonal = Record<keyof PersonalFields, boolean>;
+type TouchedAddress = Record<keyof AddressFields, boolean>;
+
+type Touched = {
+  personal: TouchedPersonal;
+  currentAddress: TouchedAddress;
+  permanentAddress: TouchedAddress;
+};
+
+const EMPTY_TOUCHED_ADDRESS: TouchedAddress = {
+  line: false,
+  area: false,
+  city: false,
+  state: false,
+  pincode: false,
+  country: false,
+};
+
+const EMPTY_TOUCHED: Touched = {
+  personal: {
+    firstName: false,
+    lastName: false,
+    email: false,
+    mobile: false,
+    gender: false,
+    dob: false,
+  },
+  currentAddress: EMPTY_TOUCHED_ADDRESS,
+  permanentAddress: EMPTY_TOUCHED_ADDRESS,
+};
+
+const ALL_TOUCHED_ADDRESS: TouchedAddress = {
+  line: true,
+  area: true,
+  city: true,
+  state: true,
+  pincode: true,
+  country: true,
+};
+
+const ALL_TOUCHED: Touched = {
+  personal: {
+    firstName: true,
+    lastName: true,
+    email: true,
+    mobile: true,
+    gender: true,
+    dob: true,
+  },
+  currentAddress: ALL_TOUCHED_ADDRESS,
+  permanentAddress: ALL_TOUCHED_ADDRESS,
+};
+
+export default function ProfilePersonalInfoPage() {
+  const [fields, setFields] = useState<Fields>(EMPTY_FIELDS);
+  const [initial, setInitial] = useState<Fields>(EMPTY_FIELDS);
+  const [touched, setTouched] = useState<Touched>(EMPTY_TOUCHED);
   const [saving, setSaving] = useState(false);
   const [verifyMode, setVerifyMode] = useState<null | "phone" | "email">(null);
   const [otp, setOtp] = useState("");
@@ -27,23 +139,73 @@ export default function ProfilePersonalInfoPage() {
 
   useEffect(() => {
     const p = getProfile();
-    setForm(p);
-    setInitial(p);
+    const loaded = profileToFields(p);
+    setFields(loaded);
+    setInitial(loaded);
   }, []);
 
-  const dirty =
-    form.fullName !== initial.fullName ||
-    form.email !== initial.email ||
-    form.phone !== initial.phone ||
-    form.dob !== initial.dob;
+  const errors = useMemo(() => validateAll(fields), [fields]);
 
-  const update =
-    (k: keyof Profile) => (e: React.ChangeEvent<HTMLInputElement>) =>
-      setForm((f) => ({ ...f, [k]: e.target.value }));
+  const isValid =
+    isSectionClean(errors.personal) &&
+    isSectionClean(errors.currentAddress) &&
+    (fields.permanentSameAsCurrent || isSectionClean(errors.permanentAddress));
+
+  const dirty = useMemo(() => !isFieldsEqual(fields, initial), [fields, initial]);
+
+  const patchPersonal = (key: keyof PersonalFields, value: string) =>
+    setFields((f) => ({
+      ...f,
+      personal: { ...f.personal, [key]: value },
+    }));
+
+  const patchAddress =
+    (which: "currentAddress" | "permanentAddress") =>
+    (key: keyof AddressFields, value: string) =>
+      setFields((f) => ({
+        ...f,
+        [which]: { ...f[which], [key]: value },
+      }));
+
+  const markPersonalTouched = (key: keyof PersonalFields) =>
+    setTouched((t) => ({
+      ...t,
+      personal: { ...t.personal, [key]: true },
+    }));
+
+  const markAddressTouched =
+    (which: "currentAddress" | "permanentAddress") =>
+    (key: keyof AddressFields) =>
+      setTouched((t) => ({
+        ...t,
+        [which]: { ...t[which], [key]: true },
+      }));
+
+  const showPersonalError = (key: keyof PersonalFields) =>
+    touched.personal[key] ? errors.personal[key] : undefined;
+
+  const showAddressError =
+    (which: "currentAddress" | "permanentAddress") =>
+    (key: keyof AddressFields) =>
+      touched[which][key] ? errors[which][key] : undefined;
 
   const commit = (label = "Personal info updated") => {
-    setProfile(form);
-    setInitial(form);
+    const permanentAddress = fields.permanentSameAsCurrent
+      ? fields.currentAddress
+      : fields.permanentAddress;
+    const patch: Partial<Profile> = {
+      firstName: fields.personal.firstName.trim(),
+      lastName: fields.personal.lastName.trim(),
+      email: fields.personal.email.trim(),
+      phone: fields.personal.mobile,
+      gender: fields.personal.gender || "",
+      dob: fields.personal.dob,
+      currentAddress: trimAddress(fields.currentAddress),
+      permanentSameAsCurrent: fields.permanentSameAsCurrent,
+      permanentAddress: trimAddress(permanentAddress),
+    };
+    setProfile(patch);
+    setInitial(fields);
     setSaving(false);
     setVerifyMode(null);
     setOtp("");
@@ -54,8 +216,12 @@ export default function ProfilePersonalInfoPage() {
 
   const handleSave = () => {
     if (!dirty || saving) return;
-    const phoneChanged = form.phone !== initial.phone;
-    const emailChanged = form.email !== initial.email;
+    if (!isValid) {
+      setTouched(ALL_TOUCHED);
+      return;
+    }
+    const phoneChanged = fields.personal.mobile !== initial.personal.mobile;
+    const emailChanged = fields.personal.email !== initial.personal.email;
     if (phoneChanged) {
       setVerifyMode("phone");
       setOtp("");
@@ -79,9 +245,7 @@ export default function ProfilePersonalInfoPage() {
     window.setTimeout(() => {
       if (otp === DEMO_OTP) {
         setVerifying(false);
-        commit(
-          verifyMode === "phone" ? "Mobile updated" : "Email updated"
-        );
+        commit(verifyMode === "phone" ? "Mobile updated" : "Email updated");
       } else {
         setOtpError("Incorrect code. Try 1234 for the demo.");
         setOtp("");
@@ -89,6 +253,11 @@ export default function ProfilePersonalInfoPage() {
       }
     }, 700);
   };
+
+  const personalDone = isSectionClean(errors.personal);
+  const currentAddressDone = isSectionClean(errors.currentAddress);
+  const permanentAddressDone =
+    fields.permanentSameAsCurrent || isSectionClean(errors.permanentAddress);
 
   return (
     <PhoneFrame label="Profile · Personal Info">
@@ -103,31 +272,244 @@ export default function ProfilePersonalInfoPage() {
       </a>
       <AppBar back href="/profile" title="Personal info" />
 
-      <div className="px-4 py-4 pb-32 space-y-4">
-        <Card padding="lg" className="space-y-4">
-          <Field
-            label="Full name"
-            value={form.fullName}
-            onChange={update("fullName")}
-          />
+      <div className="px-4 py-4 pb-32 space-y-3">
+        <CollapsibleCard
+          title="Personal Information"
+          icon={<User size={16} />}
+          done={personalDone}
+          defaultOpen
+        >
+          <div className="grid grid-cols-2 gap-2.5">
+            <Field
+              label="First Name"
+              required
+              placeholder="Enter first name"
+              value={fields.personal.firstName}
+              onChange={(v) => patchPersonal("firstName", v)}
+              onBlur={() => markPersonalTouched("firstName")}
+              maxLength={40}
+              error={showPersonalError("firstName")}
+            />
+            <Field
+              label="Last Name"
+              required
+              placeholder="Enter last name"
+              value={fields.personal.lastName}
+              onChange={(v) => patchPersonal("lastName", v)}
+              onBlur={() => markPersonalTouched("lastName")}
+              maxLength={40}
+              error={showPersonalError("lastName")}
+            />
+          </div>
           <Field
             label="Email"
-            type="email"
-            value={form.email}
-            onChange={update("email")}
+            required
+            placeholder="email@example.com"
+            value={fields.personal.email}
+            onChange={(v) => patchPersonal("email", v)}
+            onBlur={() => markPersonalTouched("email")}
+            inputMode="email"
+            maxLength={120}
+            error={showPersonalError("email")}
           />
           <Field
-            label="Mobile"
-            value={form.phone}
-            onChange={update("phone")}
+            label="Mobile Number"
+            required
+            placeholder="+91 98765 43210"
+            value={fields.personal.mobile}
+            onChange={(v) =>
+              patchPersonal("mobile", v.replace(/[^\d+ ]/g, "").slice(0, 16))
+            }
+            onBlur={() => markPersonalTouched("mobile")}
+            inputMode="tel"
+            maxLength={16}
+            error={showPersonalError("mobile")}
+          />
+          <div className="grid grid-cols-2 gap-2.5">
+            <SelectField
+              label="Gender"
+              value={fields.personal.gender}
+              onChange={(v) => patchPersonal("gender", v)}
+              options={[
+                { value: "", label: "Select" },
+                { value: "male", label: "Male" },
+                { value: "female", label: "Female" },
+                { value: "other", label: "Other" },
+              ]}
+            />
+            <Field
+              label="Date of Birth"
+              placeholder="dd/mm/yyyy"
+              type="date"
+              value={fields.personal.dob}
+              onChange={(v) => patchPersonal("dob", v)}
+              onBlur={() => markPersonalTouched("dob")}
+            />
+          </div>
+        </CollapsibleCard>
+
+        <CollapsibleCard
+          title="Current Address"
+          icon={<MapPin size={16} />}
+          done={currentAddressDone}
+        >
+          <Field
+            label="Address Line"
+            required
+            placeholder="Street address"
+            value={fields.currentAddress.line}
+            onChange={(v) => patchAddress("currentAddress")("line", v)}
+            onBlur={() => markAddressTouched("currentAddress")("line")}
+            maxLength={200}
+            error={showAddressError("currentAddress")("line")}
           />
           <Field
-            label="Date of birth"
-            type="date"
-            value={form.dob}
-            onChange={update("dob")}
+            label="Area/Locality"
+            placeholder="Area or locality"
+            value={fields.currentAddress.area}
+            onChange={(v) => patchAddress("currentAddress")("area", v)}
+            onBlur={() => markAddressTouched("currentAddress")("area")}
+            maxLength={80}
+            error={showAddressError("currentAddress")("area")}
           />
-        </Card>
+          <div className="grid grid-cols-2 gap-2.5">
+            <Field
+              label="City"
+              required
+              placeholder="City"
+              value={fields.currentAddress.city}
+              onChange={(v) => patchAddress("currentAddress")("city", v)}
+              onBlur={() => markAddressTouched("currentAddress")("city")}
+              maxLength={60}
+              error={showAddressError("currentAddress")("city")}
+            />
+            <Field
+              label="State"
+              required
+              placeholder="State"
+              value={fields.currentAddress.state}
+              onChange={(v) => patchAddress("currentAddress")("state", v)}
+              onBlur={() => markAddressTouched("currentAddress")("state")}
+              maxLength={40}
+              error={showAddressError("currentAddress")("state")}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2.5">
+            <Field
+              label="PIN Code"
+              required
+              placeholder="PIN code"
+              value={fields.currentAddress.pincode}
+              onChange={(v) =>
+                patchAddress("currentAddress")(
+                  "pincode",
+                  v.replace(/\D/g, "").slice(0, 6)
+                )
+              }
+              onBlur={() => markAddressTouched("currentAddress")("pincode")}
+              inputMode="numeric"
+              maxLength={6}
+              error={showAddressError("currentAddress")("pincode")}
+            />
+            <Field
+              label="Country"
+              placeholder="Country"
+              value={fields.currentAddress.country}
+              onChange={(v) => patchAddress("currentAddress")("country", v)}
+              onBlur={() => markAddressTouched("currentAddress")("country")}
+              maxLength={40}
+            />
+          </div>
+        </CollapsibleCard>
+
+        <CheckboxRow
+          checked={fields.permanentSameAsCurrent}
+          onChange={(v) =>
+            setFields((f) => ({ ...f, permanentSameAsCurrent: v }))
+          }
+        >
+          Permanent address same as current address
+        </CheckboxRow>
+
+        {!fields.permanentSameAsCurrent && (
+          <CollapsibleCard
+            title="Permanent Address"
+            icon={<Home size={16} />}
+            done={permanentAddressDone}
+          >
+            <Field
+              label="Address Line"
+              required
+              placeholder="Street address"
+              value={fields.permanentAddress.line}
+              onChange={(v) => patchAddress("permanentAddress")("line", v)}
+              onBlur={() => markAddressTouched("permanentAddress")("line")}
+              maxLength={200}
+              error={showAddressError("permanentAddress")("line")}
+            />
+            <Field
+              label="Area/Locality"
+              placeholder="Area or locality"
+              value={fields.permanentAddress.area}
+              onChange={(v) => patchAddress("permanentAddress")("area", v)}
+              onBlur={() => markAddressTouched("permanentAddress")("area")}
+              maxLength={80}
+              error={showAddressError("permanentAddress")("area")}
+            />
+            <div className="grid grid-cols-2 gap-2.5">
+              <Field
+                label="City"
+                required
+                placeholder="City"
+                value={fields.permanentAddress.city}
+                onChange={(v) => patchAddress("permanentAddress")("city", v)}
+                onBlur={() => markAddressTouched("permanentAddress")("city")}
+                maxLength={60}
+                error={showAddressError("permanentAddress")("city")}
+              />
+              <Field
+                label="State"
+                required
+                placeholder="State"
+                value={fields.permanentAddress.state}
+                onChange={(v) => patchAddress("permanentAddress")("state", v)}
+                onBlur={() => markAddressTouched("permanentAddress")("state")}
+                maxLength={40}
+                error={showAddressError("permanentAddress")("state")}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
+              <Field
+                label="PIN Code"
+                required
+                placeholder="PIN code"
+                value={fields.permanentAddress.pincode}
+                onChange={(v) =>
+                  patchAddress("permanentAddress")(
+                    "pincode",
+                    v.replace(/\D/g, "").slice(0, 6)
+                  )
+                }
+                onBlur={() => markAddressTouched("permanentAddress")("pincode")}
+                inputMode="numeric"
+                maxLength={6}
+                error={showAddressError("permanentAddress")("pincode")}
+              />
+              <Field
+                label="Country"
+                placeholder="Country"
+                value={fields.permanentAddress.country}
+                onChange={(v) =>
+                  patchAddress("permanentAddress")("country", v)
+                }
+                onBlur={() =>
+                  markAddressTouched("permanentAddress")("country")
+                }
+                maxLength={40}
+              />
+            </div>
+          </CollapsibleCard>
+        )}
       </div>
 
       <div className="sticky bottom-0 z-20 mt-auto bg-white/95 backdrop-blur border-t border-[var(--border-subtle)] px-4 pt-3 pb-4">
@@ -174,7 +556,9 @@ export default function ProfilePersonalInfoPage() {
                 <p className="t-body-sm text-neutral-500 mt-1">
                   We sent a 4-digit code to{" "}
                   <span className="font-semibold text-neutral-700">
-                    {verifyMode === "phone" ? form.phone : form.email}
+                    {verifyMode === "phone"
+                      ? fields.personal.mobile
+                      : fields.personal.email}
                   </span>
                   .
                 </p>
@@ -218,7 +602,11 @@ export default function ProfilePersonalInfoPage() {
                 </p>
               )}
               <p className="mt-2 t-caption text-neutral-400 text-center">
-                Demo tip: use <span className="font-semibold text-neutral-500 tabular">1234</span> to confirm.
+                Demo tip: use{" "}
+                <span className="font-semibold text-neutral-500 tabular">
+                  1234
+                </span>{" "}
+                to confirm.
               </p>
             </div>
 
@@ -261,26 +649,345 @@ export default function ProfilePersonalInfoPage() {
   );
 }
 
+/* ---------- helpers ---------- */
+
+function profileToFields(p: Profile): Fields {
+  return {
+    personal: {
+      firstName: p.firstName,
+      lastName: p.lastName,
+      email: p.email,
+      mobile: p.phone,
+      gender: p.gender,
+      dob: p.dob,
+    },
+    currentAddress: addressToFields(p.currentAddress),
+    permanentSameAsCurrent: p.permanentSameAsCurrent,
+    permanentAddress: addressToFields(p.permanentAddress),
+  };
+}
+
+function addressToFields(a?: Address): AddressFields {
+  return {
+    line: a?.line ?? "",
+    area: a?.area ?? "",
+    city: a?.city ?? "",
+    state: a?.state ?? "",
+    pincode: a?.pincode ?? "",
+    country: a?.country ?? "India",
+  };
+}
+
+function trimAddress(a: AddressFields): Address {
+  return {
+    line: a.line.trim(),
+    area: a.area.trim(),
+    city: a.city.trim(),
+    state: a.state.trim(),
+    pincode: a.pincode,
+    country: a.country.trim(),
+  };
+}
+
+function isAddressEqual(a: AddressFields, b: AddressFields) {
+  return (
+    a.line === b.line &&
+    a.area === b.area &&
+    a.city === b.city &&
+    a.state === b.state &&
+    a.pincode === b.pincode &&
+    a.country === b.country
+  );
+}
+
+function isFieldsEqual(a: Fields, b: Fields) {
+  const ap = a.personal;
+  const bp = b.personal;
+  if (
+    ap.firstName !== bp.firstName ||
+    ap.lastName !== bp.lastName ||
+    ap.email !== bp.email ||
+    ap.mobile !== bp.mobile ||
+    ap.gender !== bp.gender ||
+    ap.dob !== bp.dob ||
+    a.permanentSameAsCurrent !== b.permanentSameAsCurrent
+  )
+    return false;
+  if (!isAddressEqual(a.currentAddress, b.currentAddress)) return false;
+  if (
+    !a.permanentSameAsCurrent &&
+    !isAddressEqual(a.permanentAddress, b.permanentAddress)
+  )
+    return false;
+  return true;
+}
+
+/* ---------- validation ---------- */
+
+type PersonalErrors = Record<keyof PersonalFields, string | null>;
+type AddressErrors = Record<keyof AddressFields, string | null>;
+
+type Errors = {
+  personal: PersonalErrors;
+  currentAddress: AddressErrors;
+  permanentAddress: AddressErrors;
+};
+
+function validateAll(f: Fields): Errors {
+  return {
+    personal: {
+      firstName: validateName(f.personal.firstName, "First name"),
+      lastName: validateName(f.personal.lastName, "Last name"),
+      email: validateEmail(f.personal.email),
+      mobile: validateMobile(f.personal.mobile),
+      gender: null,
+      dob: null,
+    },
+    currentAddress: validateAddress(f.currentAddress),
+    permanentAddress: f.permanentSameAsCurrent
+      ? emptyAddressErrors()
+      : validateAddress(f.permanentAddress),
+  };
+}
+
+function emptyAddressErrors(): AddressErrors {
+  return {
+    line: null,
+    area: null,
+    city: null,
+    state: null,
+    pincode: null,
+    country: null,
+  };
+}
+
+function validateAddress(a: AddressFields): AddressErrors {
+  return {
+    line: !a.line.trim()
+      ? "Address line is required."
+      : a.line.trim().length < 5
+        ? "Address feels too short — add more detail."
+        : null,
+    area: null,
+    city: !a.city.trim() ? "City is required." : null,
+    state: !a.state.trim() ? "State is required." : null,
+    pincode: !a.pincode
+      ? "PIN code is required."
+      : !/^[1-9][0-9]{5}$/.test(a.pincode)
+        ? "Enter a valid 6-digit Indian PIN code."
+        : null,
+    country: null,
+  };
+}
+
+function isSectionClean(section: Record<string, string | null>) {
+  return Object.values(section).every((v) => !v);
+}
+
+function validateName(v: string, label: string): string | null {
+  const t = v.trim();
+  if (!t) return `${label} is required.`;
+  if (t.length < 2) return `${label} must be at least 2 characters.`;
+  if (!/^[A-Za-z][A-Za-z\s.'-]*$/.test(t))
+    return "Use letters, spaces, dots or hyphens only.";
+  return null;
+}
+
+function validateEmail(v: string): string | null {
+  const t = v.trim();
+  if (!t) return "Email is required.";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(t))
+    return "Enter a valid email address.";
+  return null;
+}
+
+function validateMobile(v: string): string | null {
+  const digits = v.replace(/\D/g, "");
+  if (!digits) return "Mobile number is required.";
+  if (digits.length < 10) return "Enter a valid mobile number.";
+  return null;
+}
+
+/* ---------- collapsible card ---------- */
+
+function CollapsibleCard({
+  title,
+  icon,
+  done,
+  defaultOpen,
+  children,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  done?: boolean;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(!!defaultOpen);
+  return (
+    <div className="rounded-2xl border border-[var(--border-default)] bg-white overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="w-full flex items-center gap-3 px-4 py-3 text-left"
+      >
+        <div
+          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+            done
+              ? "bg-success/10 text-success-bold"
+              : "bg-primary-50 text-primary-700"
+          }`}
+        >
+          {done ? <Check size={16} strokeWidth={3} /> : icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="t-body-lg font-semibold text-neutral-800">
+            {title}
+          </div>
+        </div>
+        <ChevronDown
+          size={18}
+          className={`text-neutral-500 shrink-0 transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+      {open && (
+        <div className="px-4 pb-4 pt-3 space-y-3 border-t border-[var(--border-subtle)]">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------- checkbox row ---------- */
+
+function CheckboxRow({
+  checked,
+  onChange,
+  children,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  children: React.ReactNode;
+}) {
+  const toggle = () => onChange(!checked);
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      role="checkbox"
+      aria-checked={checked}
+      className="w-full flex items-start gap-3 px-1 py-1 text-left"
+    >
+      <span
+        className={`w-5 h-5 mt-0.5 rounded-md flex items-center justify-center shrink-0 transition-colors ${
+          checked
+            ? "bg-primary-600 text-white"
+            : "border-2 border-neutral-300 bg-white"
+        }`}
+      >
+        {checked && <Check size={14} strokeWidth={3} />}
+      </span>
+      <span className="t-body text-neutral-800 leading-snug">{children}</span>
+    </button>
+  );
+}
+
+/* ---------- field ---------- */
+
 function Field({
+  label,
+  placeholder,
+  required,
+  type = "text",
+  value,
+  onChange,
+  onBlur,
+  inputMode,
+  maxLength,
+  error,
+}: {
+  label: string;
+  placeholder: string;
+  required?: boolean;
+  type?: string;
+  value?: string;
+  onChange?: (v: string) => void;
+  onBlur?: () => void;
+  inputMode?: "text" | "numeric" | "tel" | "email";
+  maxLength?: number;
+  error?: string | null;
+}) {
+  return (
+    <div className="min-w-0">
+      <label className="t-caption font-semibold text-neutral-700 mb-1 block">
+        {label} {required && <span className="text-error">*</span>}
+      </label>
+      <div
+        className={`flex items-center rounded-xl border bg-white overflow-hidden transition-colors ${
+          error
+            ? "border-error focus-within:border-error"
+            : "border-[var(--border-default)] focus-within:border-primary-500"
+        }`}
+      >
+        <input
+          type={type}
+          placeholder={placeholder}
+          size={1}
+          value={value}
+          onChange={onChange ? (e) => onChange(e.target.value) : undefined}
+          onBlur={onBlur}
+          inputMode={inputMode}
+          maxLength={maxLength}
+          aria-invalid={error ? true : undefined}
+          className="flex-1 min-w-0 px-3 py-3 t-body text-neutral-800 placeholder:text-neutral-400 focus:outline-none bg-transparent"
+        />
+      </div>
+      {error && (
+        <p className="mt-1.5 t-caption text-error font-medium">{error}</p>
+      )}
+    </div>
+  );
+}
+
+function SelectField({
   label,
   value,
   onChange,
-  type = "text",
+  options,
+  required,
 }: {
   label: string;
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  type?: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  required?: boolean;
 }) {
   return (
-    <label className="block">
-      <span className="t-caption font-semibold text-neutral-500">{label}</span>
-      <input
-        type={type}
-        value={value}
-        onChange={onChange}
-        className="mt-1.5 w-full h-11 px-3 rounded-lg border border-[var(--border-default)] bg-white t-body text-neutral-800 focus:outline-none focus:border-primary-500 transition-colors"
-      />
-    </label>
+    <div className="min-w-0">
+      <label className="t-caption font-semibold text-neutral-700 mb-1 block">
+        {label} {required && <span className="text-error">*</span>}
+      </label>
+      <div className="relative flex items-center rounded-xl border border-[var(--border-default)] bg-white overflow-hidden focus-within:border-primary-500 transition-colors">
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="flex-1 min-w-0 px-3 py-3 pr-8 t-body text-neutral-800 focus:outline-none bg-transparent appearance-none"
+        >
+          {options.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <ChevronDown
+          size={16}
+          className="absolute right-3 text-neutral-500 pointer-events-none"
+        />
+      </div>
+    </div>
   );
 }

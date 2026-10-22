@@ -53,7 +53,7 @@ const INITIAL_MEMBERS: Member[] = [
     id: "m1",
     name: "Rohan Verma",
     initials: "RV",
-    role: "Associate · Traffic",
+    role: "Traffic",
     area: "Koramangala",
     phone: "+91 98450 12345",
     email: "rohan.v@example.com",
@@ -90,7 +90,7 @@ const INITIAL_MEMBERS: Member[] = [
     id: "m2",
     name: "Aditi Kulkarni",
     initials: "AK",
-    role: "Associate · RTO",
+    role: "RTO",
     area: "HSR Layout",
     phone: "+91 98867 22110",
     email: "aditi.k@example.com",
@@ -141,7 +141,7 @@ const INITIAL_MEMBERS: Member[] = [
     id: "m3",
     name: "Sameer Iqbal",
     initials: "SI",
-    role: "Junior · Traffic",
+    role: "Traffic",
     area: "BTM",
     phone: "+91 99862 55401",
     email: "sameer.i@example.com",
@@ -164,7 +164,7 @@ const INITIAL_MEMBERS: Member[] = [
     id: "m4",
     name: "Neha Rao",
     initials: "NR",
-    role: "Associate · General",
+    role: "General",
     area: "Indiranagar",
     phone: "+91 98008 71234",
     email: "",
@@ -404,9 +404,6 @@ function MemberCard({
               {status.label}
             </Chip>
           )}
-        </div>
-        <div className="t-caption text-neutral-500 mt-0.5 truncate">
-          {member.role}
         </div>
         <div className="mt-1.5 flex items-center gap-3 t-caption text-neutral-600">
           <span className="inline-flex items-center gap-1">

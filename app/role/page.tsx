@@ -66,7 +66,7 @@ export default function RoleSelectPage() {
     <PhoneFrame label="Role Selection">
       <a
         ref={nextLinkRef}
-        href="/onboarding/personal"
+        href="/onboarding/expertise"
         className="hidden"
         aria-hidden
         tabIndex={-1}
@@ -79,7 +79,7 @@ export default function RoleSelectPage() {
         <div className="mb-6">
           <OnboardingStepBar
             current={2}
-            label="Expertise"
+            label="Role"
             steps={getOnboardingSteps(accountType)}
           />
         </div>
