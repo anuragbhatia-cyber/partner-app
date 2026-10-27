@@ -87,10 +87,17 @@ export function incidentElapsedMs(
   return Math.max(0, end - inc.assignedAt);
 }
 
+export type ArchivedLead = Lead & {
+  /** Millis · when the batch was rejected or completed. */
+  archivedAt: number;
+};
+
 type State = {
   leads: Lead[];
   assigned: ActiveIncident[];
   closed: ActiveIncident[];
+  rejected: ArchivedLead[];
+  completed: ArchivedLead[];
 };
 
 const OFFENCES_BY_CATEGORY: Record<LeadCategory, string[]> = {
@@ -362,10 +369,80 @@ const SEED_CLOSED: ActiveIncident[] = [
   },
 ];
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const SEED_COMPLETED: ArchivedLead[] = [
+  {
+    id: "BATCH-2298",
+    type: "Traffic Challans",
+    category: "challan",
+    itemLabel: "Challans",
+    location: "Mumbai, Maharashtra",
+    earnings: 850,
+    postedMinAgo: 60 * 24 * 3,
+    urgency: "medium",
+    items: buildItems("08", "Maharashtra", "MH", 8, 2200, "12 Aug 2026", "challan"),
+    archivedAt: Date.now() - 2 * DAY_MS,
+  },
+  {
+    id: "BATCH-2294",
+    type: "Court Cases",
+    category: "case",
+    itemLabel: "Cases",
+    location: "Bengaluru, Karnataka",
+    earnings: 1400,
+    postedMinAgo: 60 * 24 * 5,
+    urgency: "high",
+    items: buildItems("09", "Karnataka", "KA", 7, 3200, "05 Aug 2026", "case"),
+    archivedAt: Date.now() - 5 * DAY_MS,
+  },
+  {
+    id: "BATCH-2288",
+    type: "RTO Renewals",
+    category: "rto",
+    itemLabel: "RTO's",
+    location: "Jayanagar, Bengaluru",
+    earnings: 240,
+    postedMinAgo: 60 * 24 * 7,
+    urgency: "low",
+    items: buildItems("10", "Karnataka", "KA", 4, 1600, "01 Aug 2026", "rto"),
+    archivedAt: Date.now() - 7 * DAY_MS,
+  },
+];
+
+const SEED_REJECTED: ArchivedLead[] = [
+  {
+    id: "BATCH-2303",
+    type: "Court Cases",
+    category: "case",
+    itemLabel: "Cases",
+    location: "Mumbai, Maharashtra",
+    earnings: 900,
+    postedMinAgo: 60 * 24,
+    urgency: "medium",
+    items: buildItems("11", "Maharashtra", "MH", 6, 3000, "10 Sep 2026", "case"),
+    archivedAt: Date.now() - 1 * DAY_MS,
+  },
+  {
+    id: "BATCH-2300",
+    type: "Traffic Challans",
+    category: "challan",
+    itemLabel: "Challans",
+    location: "Pune, Maharashtra",
+    earnings: 300,
+    postedMinAgo: 60 * 24 * 2,
+    urgency: "low",
+    items: buildItems("07", "Maharashtra", "MH", 5, 1500, "20 Sep 2026", "challan"),
+    archivedAt: Date.now() - 2 * DAY_MS,
+  },
+];
+
 let state: State = {
   leads: SEED_LEADS,
   assigned: SEED_ASSIGNED,
   closed: SEED_CLOSED,
+  rejected: SEED_REJECTED,
+  completed: SEED_COMPLETED,
 };
 const listeners = new Set<() => void>();
 
@@ -431,9 +508,13 @@ export function assignLead(id: string) {
 }
 
 export function skipLead(id: string) {
+  const lead = state.leads.find((l) => l.id === id);
   state = {
     ...state,
     leads: state.leads.filter((l) => l.id !== id),
+    rejected: lead
+      ? [{ ...lead, archivedAt: Date.now() }, ...state.rejected]
+      : state.rejected,
   };
   emit();
 }
