@@ -242,7 +242,7 @@ export default function PrototypePlayer() {
         e.preventDefault();
         return;
       }
-      const leadMatch = href.match(/^\/leads\/(.+)$/);
+      const leadMatch = href.match(/^\/leads\/([^?#]+)/);
       if (leadMatch) {
         e.preventDefault();
         setPreviewLeadId(decodeURIComponent(leadMatch[1]));
